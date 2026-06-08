@@ -1029,14 +1029,47 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   ];
 
+  // Persist open milestones state
+  let openMilestones = JSON.parse(localStorage.getItem('litcrack_roadmap_open') || '["milestone-1"]');
+
+  window.toggleMilestone = (nodeId) => {
+    const nodeEl = document.getElementById(`node-${nodeId}`);
+    if (!nodeEl) return;
+    const bodyEl = nodeEl.querySelector('.roadmap-body');
+    if (!bodyEl) return;
+
+    const isOpen = nodeEl.classList.contains('open-node');
+    if (isOpen) {
+      // Collapse
+      bodyEl.style.maxHeight = bodyEl.scrollHeight + 'px';
+      setTimeout(() => {
+        bodyEl.style.maxHeight = '0px';
+        bodyEl.classList.remove('open');
+      }, 10);
+      nodeEl.classList.remove('open-node');
+      openMilestones = openMilestones.filter(id => id !== nodeId);
+    } else {
+      // Expand
+      bodyEl.classList.add('open');
+      bodyEl.style.maxHeight = bodyEl.scrollHeight + 'px';
+      nodeEl.classList.add('open-node');
+      setTimeout(() => {
+        bodyEl.style.maxHeight = 'none';
+      }, 450);
+      if (!openMilestones.includes(nodeId)) {
+        openMilestones.push(nodeId);
+      }
+    }
+    localStorage.setItem('litcrack_roadmap_open', JSON.stringify(openMilestones));
+  };
+
   function renderRoadmap() {
-    const container = document.getElementById('roadmap-timeline-container');
+    const container = document.getElementById('roadmap-nodes-list');
     if (!container) return;
 
     let savedProgress = JSON.parse(localStorage.getItem('litcrack_roadmap_progress') || '{}');
 
     container.innerHTML = ROADMAP_DATA.map(node => {
-      let nodeStatusClass = 'roadmap-node';
       let nodeTasksHtml = node.tasks.map(t => {
         let isChecked = savedProgress[t.id] ? 'checked' : '';
         return `
@@ -1047,20 +1080,54 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
       }).join('');
 
+      let completedCount = node.tasks.filter(t => savedProgress[t.id]).length;
+      let totalCount = node.tasks.length;
+      let progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+      let isExpanded = openMilestones.includes(node.id);
+      let bodyClass = isExpanded ? 'roadmap-body open' : 'roadmap-body';
+      let nodeClass = 'roadmap-node' + (isExpanded ? ' open-node' : '');
+      let maxStyle = isExpanded ? 'style="max-height: none;"' : 'style="max-height: 0px;"';
+
+      let badgeHtml = '';
+      if (progressPercent === 100) {
+        badgeHtml = `<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Completed</span>`;
+      } else if (progressPercent > 0) {
+        badgeHtml = `<span class="badge badge-progressing"><i class="fa-solid fa-spinner fa-spin"></i> In Progress</span>`;
+      } else {
+        badgeHtml = `<span class="badge badge-locked">Not Started</span>`;
+      }
+
       return `
-        <div class="${nodeStatusClass}" id="node-${node.id}">
+        <div class="${nodeClass}" id="node-${node.id}">
           <div class="roadmap-content">
-            <h3>${node.title}</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;">${node.description}</p>
-            <ul class="roadmap-tasks">
-              ${nodeTasksHtml}
-            </ul>
+            <div class="roadmap-header" onclick="window.toggleMilestone('${node.id}')">
+              <div style="flex-grow: 1; margin-right: 1.5rem;">
+                <h3>${node.title}</h3>
+                <div class="node-progress-container">
+                  <div class="node-progress-track">
+                    <div class="node-progress-bar" id="progress-bar-${node.id}" style="width: ${progressPercent}%;"></div>
+                  </div>
+                  <span class="node-progress-text" id="progress-text-${node.id}">${completedCount} / ${totalCount} Tasks</span>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div id="badge-container-${node.id}">${badgeHtml}</div>
+                <i class="fa-solid fa-chevron-down roadmap-chevron"></i>
+              </div>
+            </div>
+            <div class="${bodyClass}" ${maxStyle}>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem; margin-top: 0.5rem;">${node.description}</p>
+              <ul class="roadmap-tasks">
+                ${nodeTasksHtml}
+              </ul>
+            </div>
           </div>
         </div>
       `;
     }).join('');
 
-    // Attach listeners
+    // Attach checkbox event listeners
     container.querySelectorAll('input[type="checkbox"]').forEach(box => {
       box.addEventListener('change', (e) => {
         const taskId = e.target.getAttribute('data-task-id');
@@ -1080,21 +1147,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateRoadmapNodeStates() {
     let savedProgress = JSON.parse(localStorage.getItem('litcrack_roadmap_progress') || '{}');
+    let overallChecked = 0;
+    let overallTotal = 0;
 
     ROADMAP_DATA.forEach(node => {
       const nodeEl = document.getElementById(`node-${node.id}`);
       if (!nodeEl) return;
 
-      const allChecked = node.tasks.every(t => savedProgress[t.id]);
-      const someChecked = node.tasks.some(t => savedProgress[t.id]);
+      const completedCount = node.tasks.filter(t => savedProgress[t.id]).length;
+      const totalCount = node.tasks.length;
+      const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
+      overallChecked += completedCount;
+      overallTotal += totalCount;
+
+      // Update progress bar width
+      const bar = document.getElementById(`progress-bar-${node.id}`);
+      if (bar) bar.style.width = `${progressPercent}%`;
+
+      // Update progress label text
+      const text = document.getElementById(`progress-text-${node.id}`);
+      if (text) text.innerText = `${completedCount} / ${totalCount} Tasks`;
+
+      // Update badge HTML
+      const badgeContainer = document.getElementById(`badge-container-${node.id}`);
+      if (badgeContainer) {
+        if (progressPercent === 100) {
+          badgeContainer.innerHTML = `<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Completed</span>`;
+        } else if (progressPercent > 0) {
+          badgeContainer.innerHTML = `<span class="badge badge-progressing"><i class="fa-solid fa-spinner fa-spin"></i> In Progress</span>`;
+        } else {
+          badgeContainer.innerHTML = `<span class="badge badge-locked">Not Started</span>`;
+        }
+      }
+
+      // Re-apply correct status classes on the roadmap node wrapper
+      const isOpen = nodeEl.classList.contains('open-node');
       nodeEl.className = 'roadmap-node';
-      if (allChecked) {
+      if (isOpen) nodeEl.classList.add('open-node');
+
+      if (progressPercent === 100) {
         nodeEl.classList.add('completed');
-      } else if (someChecked) {
+      } else if (progressPercent > 0) {
         nodeEl.classList.add('active');
       }
     });
+
+    // Update overall connecting timeline fill track
+    const timelineFill = document.getElementById('roadmap-timeline-fill');
+    if (timelineFill) {
+      let overallPercent = overallTotal > 0 ? Math.round((overallChecked / overallTotal) * 100) : 0;
+      timelineFill.style.height = `calc(${overallPercent}% - 8px)`;
+    }
   }
 
   // ==========================================================================
