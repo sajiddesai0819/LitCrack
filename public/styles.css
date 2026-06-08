@@ -1552,27 +1552,9 @@ select.form-control {
   color: var(--text-desc);
 }
 
-.app-footer .credit-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: rgba(168, 85, 247, 0.06);
-  border: 1px solid rgba(168, 85, 247, 0.15);
-  padding: 0.35rem 0.75rem;
-  border-radius: 6px;
-  font-size: 0.76rem;
-}
-
-.app-footer .credit-badge i {
-  color: var(--primary-bright);
-}
-
-.app-footer .credit-badge span {
-  color: var(--text-primary);
-}
-
-.app-footer .credit-badge strong {
-  color: var(--secondary-bright);
+.footer-credit {
+  font-size: 0.74rem;
+  color: var(--text-muted);
 }
 
 .footer-links-row {
