@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LitCrack - KLECET Literary Club Tech Prep Hub</title>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Core Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+  <!-- jsPDF and html2canvas Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- Background decorative aurora blur blobs -->
+  <div class="blur-blob blob-indigo"></div>
+  <div class="blur-blob blob-cyan"></div>
+  <div class="blur-blob blob-purple"></div>
+
+  <!-- Authentication Screen Glass Overlay -->
+  <div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(2, 2, 3, 0.95); backdrop-filter: blur(24px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px;">
+    <div class="glass-card glow-indigo" style="width: 100%; max-width: 480px; animation: scaleUp 0.45s var(--ease-out-expo); box-shadow: 0 30px 70px rgba(0,0,0,0.8);">
+      
+      <!-- Brand Logo Header -->
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <div class="logo-icon" style="margin: 0 auto 1rem;">
+          <svg class="litcrack-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="logo-grad-primary-auth" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#9d59f7" />
+                <stop offset="100%" stop-color="#f43f5e" />
+              </linearGradient>
+              <linearGradient id="logo-grad-secondary-auth" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#34d399" />
+                <stop offset="100%" stop-color="#10b981" />
+              </linearGradient>
+              <filter id="logo-neon-glow-auth" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            <polygon points="50,6 88,28 88,72 50,94 12,72 12,28" fill="none" stroke="url(#logo-grad-primary-auth)" stroke-width="4.5" stroke-linejoin="round" />
+            <path d="M12,28 L30,18 M88,28 L70,18 M88,72 L70,82 M12,72 L30,82" stroke="url(#logo-grad-secondary-auth)" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M38,32 L38,62 L58,62" fill="none" stroke="url(#logo-grad-primary-auth)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M64,38 C60,34 54,34 50,34 C42,34 38,40 38,50 C38,60 42,66 50,66 C55,66 60,64 64,60" fill="none" stroke="url(#logo-grad-secondary-auth)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9" />
+            <path d="M50,22 L42,50 L52,50 L46,76 L62,44 L50,44 Z" fill="url(#logo-grad-primary-auth)" filter="url(#logo-neon-glow-auth)" />
+          </svg>
+        </div>
+        <h2 style="font-family: var(--font-display); font-weight: 900; font-size: 1.85rem; letter-spacing: -1px; background: linear-gradient(135deg, #fff, var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">LitCrack</h2>
+        <span style="font-size: 0.75rem; color: var(--secondary); font-weight: 800; text-transform: uppercase; letter-spacing: 2px;">KLECET Chikodi Portal</span>
+      </div>
+
+      <!-- Auth Mode Switch Tabs -->
+      <div style="display: flex; border: 1px solid var(--border-light); border-radius: 10px; background: rgba(0,0,0,0.2); padding: 4px; margin-bottom: 1.5rem;">
+        <button class="btn btn-outline active" id="btn-auth-tab-login" style="flex: 1; padding: 0.5rem; font-size: 0.85rem; border: none;">Login</button>
+        <button class="btn btn-outline" id="btn-auth-tab-register" style="flex: 1; padding: 0.5rem; font-size: 0.85rem; border: none;">Register</button>
+      </div>
+
+      <!-- Login Form Panel -->
+      <div id="auth-form-login">
+        <div class="form-group">
+          <label for="login-email">Email Address</label>
+          <input type="email" id="login-email" class="form-control" placeholder="e.g. name@klecet.edu.in">
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" class="form-control" placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary" id="btn-login-submit" style="width: 100%; margin-top: 1rem;">Sign In</button>
+      </div>
+
+      <!-- Register Form Panel -->
+      <div id="auth-form-register" style="display: none;">
+        <div class="form-group">
+          <label for="reg-name">Full Name</label>
+          <input type="text" id="reg-name" class="form-control" placeholder="e.g. Anita Naik">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;" class="grid-2">
+          <div class="form-group">
+            <label for="reg-usn">USN (Seat No.)</label>
+            <input type="text" id="reg-usn" class="form-control" placeholder="e.g. 2KL20CS042" style="text-transform: uppercase;">
+          </div>
+          <div class="form-group">
+            <label for="reg-branch">Branch</label>
+            <select id="reg-branch" class="form-control">
+              <option value="CSE">CSE</option>
+              <option value="ECE">ECE</option>
+              <option value="EEE">EEE</option>
+              <option value="Mechanical">MECH</option>
+              <option value="Civil">CIVIL</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="reg-email">Email Address</label>
+          <input type="email" id="reg-email" class="form-control" placeholder="e.g. student@klecet.edu.in">
+        </div>
+        <div class="form-group">
+          <label for="reg-password">Password</label>
+          <input type="password" id="reg-password" class="form-control" placeholder="Min. 6 characters">
+        </div>
+        <button class="btn btn-primary" id="btn-register-submit" style="width: 100%; margin-top: 1rem;">Create Account</button>
+      </div>
+
+      <!-- Footer Credits -->
+      <div style="font-size: 0.68rem; color: var(--text-muted); text-align: center; border-top: 1px solid var(--border-light); padding-top: 1rem; margin-top: 1.5rem; font-family: var(--font-display); letter-spacing: 0.5px;">
+        Designed & Engineered by <strong style="color: var(--secondary);">Sajid Desai</strong>, KLECET
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Overlay for Mobile Sidebar Drawer -->
+  <div id="sidebar-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 95;"></div>
+
+  <div id="app-container">
+    
+    <!-- Sidebar Navigation Drawer -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo-section">
+        <div class="logo-icon">
+          <svg class="litcrack-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="logo-grad-primary-sidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#9d59f7" />
+                <stop offset="100%" stop-color="#f43f5e" />
+              </linearGradient>
+              <linearGradient id="logo-grad-secondary-sidebar" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#34d399" />
+                <stop offset="100%" stop-color="#10b981" />
+              </linearGradient>
+              <filter id="logo-neon-glow-sidebar" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            <polygon points="50,6 88,28 88,72 50,94 12,72 12,28" fill="none" stroke="url(#logo-grad-primary-sidebar)" stroke-width="4.5" stroke-linejoin="round" />
+            <path d="M12,28 L30,18 M88,28 L70,18 M88,72 L70,82 M12,72 L30,82" stroke="url(#logo-grad-secondary-sidebar)" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M38,32 L38,62 L58,62" fill="none" stroke="url(#logo-grad-primary-sidebar)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M64,38 C60,34 54,34 50,34 C42,34 38,40 38,50 C38,60 42,66 50,66 C55,66 60,64 64,60" fill="none" stroke="url(#logo-grad-secondary-sidebar)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9" />
+            <path d="M50,22 L42,50 L52,50 L46,76 L62,44 L50,44 Z" fill="url(#logo-grad-primary-sidebar)" filter="url(#logo-neon-glow-sidebar)" />
+          </svg>
+        </div>
+        <div class="logo-text">
+          <h1>LitCrack</h1>
+          <span>KLECET Chikodi</span>
+        </div>
+      </div>
+
+      <ul class="sidebar-menu">
+        <li class="menu-item active" data-view="dashboard" id="sidebar-menu-dashboard">
+          <button><i class="fa-solid fa-chart-pie"></i>Dashboard</button>
+        </li>
+        <li class="menu-item" data-view="roadmap" id="sidebar-menu-roadmap">
+          <button><i class="fa-solid fa-route"></i>Prep Roadmap</button>
+        </li>
+        <li class="menu-item" data-view="gd-hub" id="sidebar-menu-gd">
+          <button><i class="fa-solid fa-comments"></i>GD Simulator</button>
+        </li>
+        <li class="menu-item" data-view="star-builder" id="sidebar-menu-star">
+          <button><i class="fa-solid fa-star"></i>STAR Builder</button>
+        </li>
+        <li class="menu-item" data-view="quiz-arena" id="sidebar-menu-quiz">
+          <button><i class="fa-solid fa-trophy"></i>Practice Quiz</button>
+        </li>
+        <li class="menu-item" data-view="live-test" id="sidebar-menu-livetest">
+          <button><i class="fa-solid fa-people-group"></i>Live Test Lobby</button>
+        </li>
+        <li class="menu-item" data-view="ai-interview" id="sidebar-menu-ai">
+          <button><i class="fa-solid fa-microphone-lines"></i>AI Mock Interview</button>
+        </li>
+        <li class="menu-item" data-view="about-klecet" id="sidebar-menu-about">
+          <button><i class="fa-solid fa-circle-info"></i>About KLECET</button>
+        </li>
+        <li class="menu-item" data-view="admin-deck" id="sidebar-menu-admin" style="display: none;">
+          <button><i class="fa-solid fa-screwdriver-wrench"></i>Admin Deck</button>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="profile-card" style="margin-bottom: 0.5rem;">
+          <div class="profile-avatar" id="nav-profile-avatar">LC</div>
+          <div class="profile-info" style="flex-grow: 1;">
+            <div class="profile-name" id="nav-profile-name">Guest Student</div>
+            <div class="profile-role" id="nav-profile-role">KLECET Aspirant</div>
+          </div>
+          <button id="btn-logout" style="background: none; border: none; color: var(--danger); cursor: pointer; padding: 4px;" title="Logout">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+        <div style="font-size: 0.68rem; color: var(--text-muted); text-align: center; border-top: 1px solid var(--border-light); padding-top: 0.5rem; font-family: var(--font-display); letter-spacing: 0.5px;">
+          Lead Architect: <strong style="color: var(--secondary);">Sajid Desai</strong>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <div class="main-wrapper">
+      
+      <!-- Top Navbar Header -->
+      <header class="top-header">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <button class="hamburger-btn" id="menu-toggle">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div class="logo-text" style="display: none;" id="mobile-brand">
+            <h1 style="font-size: 1.15rem; background: linear-gradient(135deg, #fff, var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">LitCrack</h1>
+          </div>
+        </div>
+
+        <div class="header-search">
+          <i class="fa-solid fa-magnifying-glass" style="color: var(--text-muted);"></i>
+          <input type="text" placeholder="Search roadmap nodes, verbal quizzes...">
+        </div>
+
+        <div class="header-actions">
+          <div class="header-badge">
+            <i class="fa-solid fa-graduation-cap" style="margin-right: 0.25rem;"></i> KLECET Chikodi
+          </div>
+        </div>
+      </header>
+
+      <!-- View Containers -->
+      <main class="content-body">
+
+        <!-- 1. DASHBOARD VIEW -->
+        <section id="view-dashboard" class="page-view">
+          <div class="hero-banner">
+            <span class="badge badge-info" style="margin-bottom: 0.75rem; background: rgba(99, 102, 241, 0.2); border-color: var(--primary);">KLE College of Engineering & Technology, Chikodi</span>
+            <h1>Elevate Your Skills for <span class="highlight">IT Placements</span></h1>
+            <p style="color: var(--text-accent); margin-bottom: 1.5rem;">Official Career Acceleration Portal of the KLECET Literary & Coding Club, Chikodi.</p>
+            <button class="btn btn-primary" onclick="window.switchView('roadmap')">
+              Explore Roadmap <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+
+          <div class="grid-3" style="margin-bottom: 2rem;">
+            <div class="glass-card glow-indigo">
+              <span class="badge badge-info">Aptitude</span>
+              <div class="stat-value" id="stat-quiz-score">0%</div>
+              <p style="color: var(--text-muted); font-size: 0.85rem;">Avg Practice Quiz Accuracy</p>
+            </div>
+            <div class="glass-card glow-cyan">
+              <span class="badge badge-success">GD Hub</span>
+              <div class="stat-value" id="stat-gd-topics">0</div>
+              <p style="color: var(--text-muted); font-size: 0.85rem;">GD Topics Practiced Today</p>
+            </div>
+            <div class="glass-card">
+              <span class="badge badge-warning">Roadmap</span>
+              <div class="stat-value" id="stat-roadmap-progress">0%</div>
+              <p style="color: var(--text-muted); font-size: 0.85rem;">Overall Milestone Progress</p>
+            </div>
+          </div>
+
+          <div class="grid-main">
+            <div class="glass-card">
+              <h3 style="margin-bottom: 1rem; font-family: var(--font-display);">Welcome back to LitCrack!</h3>
+              <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Use our resources to perfect both coding structures and interview expressions. We believe that coding gets you the interview, but communication cracks it!</p>
+              
+              <h4 style="margin-bottom: 0.75rem;">Key placement resources:</h4>
+              <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.75rem;">
+                <li style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                  <i class="fa-solid fa-check-circle" style="color: var(--success); margin-top: 0.25rem;"></i>
+                  <div>
+                    <strong>Live Aptitude Arena</strong>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Join rooms created by Literary Club admins and compete live with 100+ peers in synchronized, timed tests.</p>
+                  </div>
+                </li>
+                <li style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                  <i class="fa-solid fa-check-circle" style="color: var(--success); margin-top: 0.25rem;"></i>
+                  <div>
+                    <strong>AI Voice Interviewer</strong>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Receive live speaking tasks. Record speech directly, and get immediate grammar, vocabulary, and tech scoring evaluation cards.</p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <div class="glass-card">
+              <h3 style="margin-bottom: 1.25rem; font-family: var(--font-display);"><i class="fa-solid fa-bullhorn" style="color: var(--primary); margin-right: 0.5rem;"></i>Broadcast Announcements</h3>
+              <div id="dashboard-announcements-container" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <p style="color: var(--text-muted); font-size: 0.85rem;">Loading announcements...</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. ROADMAP VIEW -->
+        <section id="view-roadmap" class="page-view" style="display: none;">
+          <div class="section-header">
+            <h2>IT Placement Journey</h2>
+            <p>Master communication and logic in 5 progressive milestones.</p>
+          </div>
+
+          <div class="glass-card">
+            <div class="roadmap-timeline" id="roadmap-timeline-container">
+              <!-- Roadmap milestones injected by script -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. GD SIMULATOR VIEW -->
+        <section id="view-gd-hub" class="page-view" style="display: none;">
+          <div class="section-header">
+            <h2>Group Discussion Hub</h2>
+            <p>Practice structuring thoughts under pressure. Build standard vocabulary and expressions.</p>
+          </div>
+
+          <div class="grid-main">
+            <div>
+              <div class="glass-card glow-cyan" style="margin-bottom: 1.5rem;">
+                <div class="topic-box" id="gd-topic-display">Click "Generate Topic" to start.</div>
+                
+                <div class="timer-ring" id="gd-timer-ring">02:00</div>
+
+                <div style="display: flex; justify-content: center; gap: 1rem;">
+                  <button class="btn btn-outline" id="btn-gd-generate">Generate Topic</button>
+                  <button class="btn btn-secondary" id="btn-gd-timer">Start Timer</button>
+                </div>
+              </div>
+
+              <div class="glass-card">
+                <h3>Vocabulary & Phrasing Booster</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Stand out in a GD by using these transitional expressions:</p>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;" id="gd-templates-container">
+                  <!-- Templates dynamically loaded -->
+                </div>
+              </div>
+            </div>
+
+            <div class="glass-card">
+              <h3>GD Evaluation Rubrics</h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">What panel moderators look for:</p>
+              <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div>
+                  <strong>Initiation Skills</strong>
+                  <p style="font-size: 0.85rem; color: var(--text-muted);">Opening the discussion with context, facts, and structure. Scores high marks.</p>
+                </div>
+                <div>
+                  <strong>Active Listening</strong>
+                  <p style="font-size: 0.85rem; color: var(--text-muted);">Acknowledging previous speakers' statements before adding your point.</p>
+                </div>
+                <div>
+                  <strong>Structure & Logic</strong>
+                  <p style="font-size: 0.85rem; color: var(--text-muted);">Speaking concisely. Use point-wise reasoning (e.g. Pros vs Cons).</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. STAR BUILDER VIEW -->
+        <section id="view-star-builder" class="page-view" style="display: none;">
+          <div class="section-header">
+            <h2>STAR Answer Builder</h2>
+            <p>Structure your answers for behavioral HR rounds using the standard Situation, Task, Action, Result framework.</p>
+          </div>
+
+          <div class="grid-main">
+            <div class="glass-card">
+              <div class="form-group">
+                <label for="star-question-selector">Select Behavioral Prompt</label>
+                <select id="star-question-selector" class="form-control">
+                  <option value="Describe a time you solved a complex technical bug under a tight deadline.">Describe a time you solved a complex technical bug under a tight deadline.</option>
+                  <option value="Tell me about a time you had a conflict with a team member in a project. How did you resolve it?">Tell me about a time you had a conflict with a team member in a project. How did you resolve it?</option>
+                  <option value="Tell me about a time you failed to achieve a goal. What did you learn?">Tell me about a time you failed to achieve a goal. What did you learn?</option>
+                  <option value="Describe your most successful college project and how you led your peers.">Describe your most successful college project and how you led your peers.</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="star-situation"><strong>S</strong>ituation (Set the context, keep it short)</label>
+                <textarea id="star-situation" class="form-control" placeholder="Example: During my final year capstone project, our backend server collapsed 3 days before submission..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="star-task"><strong>T</strong>ask (What was your specific responsibility?)</label>
+                <textarea id="star-task" class="form-control" placeholder="Example: My task was to identify the memory leak and rebuild the database indexing..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="star-action"><strong>A</strong>ction (What did you do? Focus on your coding or leadership)</label>
+                <textarea id="star-action" class="form-control" placeholder="Example: I profiled the Node.js threads, added middleware for request validation, and..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="star-result"><strong>R</strong>esult (Metrics! What did you achieve/learn?)</label>
+                <textarea id="star-result" class="form-control" placeholder="Example: Server latency dropped by 45%, database queries stabilized, and we scored an A grade..."></textarea>
+              </div>
+
+              <button class="btn btn-primary" id="btn-save-star">Save Answer Card</button>
+            </div>
+
+            <div>
+              <div class="glass-card glow-indigo" style="position: sticky; top: 90px;">
+                <h3 style="margin-bottom: 1rem;">Live Preview Card</h3>
+                <div class="star-preview-card" id="star-live-preview">
+                  <div class="star-preview-section">
+                    <strong><span class="star-letter">S</span> Situation</strong>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);" id="preview-s">Type in the situation input field...</p>
+                  </div>
+                  <div class="star-preview-section">
+                    <strong><span class="star-letter" style="background: var(--secondary);">T</span> Task</strong>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);" id="preview-t">Type in the task input field...</p>
+                  </div>
+                  <div class="star-preview-section">
+                    <strong><span class="star-letter" style="background: var(--success);">A</span> Action</strong>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);" id="preview-a">Type in the action input field...</p>
+                  </div>
+                  <div class="star-preview-section">
+                    <strong><span class="star-letter" style="background: var(--warning);">R</span> Result</strong>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);" id="preview-r">Type in the result input field...</p>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                  <button class="btn btn-outline" id="btn-export-star" style="width: 100%;">
+                    <i class="fa-solid fa-copy"></i> Copy Text
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. PRACTICE QUIZ ARENA -->
+        <section id="view-quiz-arena" class="page-view" style="display: none;">
+          <div class="section-header">
+            <h2>Verbal & Technical Quiz</h2>
+            <p>Practice individual MCQs and read in-depth explanations to reinforce your placement skills.</p>
+          </div>
+
+          <div class="quiz-container">
+            <div class="glass-card" id="quiz-selection-panel">
+              <h3 style="margin-bottom: 1.5rem; text-align: center;">Choose Practice Domain</h3>
+              <div class="grid-2">
+                <button class="btn btn-primary" onclick="window.startPracticeQuiz('verbal')" style="height: 100px; font-size: 1.25rem;">
+                  <i class="fa-solid fa-language" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
+                  Verbal Ability (Literary)
+                </button>
+                <button class="btn btn-secondary" onclick="window.startPracticeQuiz('technical')" style="height: 100px; font-size: 1.25rem;">
+                  <i class="fa-solid fa-laptop-code" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
+                  Technical Aptitude
+                </button>
+              </div>
+            </div>
+
+            <!-- Quiz Play Box -->
+            <div class="glass-card" id="quiz-play-panel" style="display: none;">
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+                <span id="quiz-progress-text" style="color: var(--text-muted); font-size: 0.85rem;">Question 1 of 5</span>
+                <span id="quiz-score-badge" class="badge badge-info">Score: 0</span>
+              </div>
+
+              <div class="question-card">
+                <h3 id="quiz-question-title" style="margin-bottom: 1rem;">Loading Question...</h3>
+                <div class="options-list" id="quiz-options-container">
+                  <!-- Options buttons injected here -->
+                </div>
+              </div>
+
+              <div class="explanation-card" id="quiz-explanation-box" style="display: none;">
+                <strong>Explanation:</strong>
+                <p id="quiz-explanation-text" style="font-size: 0.85rem; margin-top: 0.5rem;"></p>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+                <button class="btn btn-primary" id="btn-quiz-next" style="display: none;">Next Question</button>
+              </div>
+            </div>
+
+            <!-- Quiz Results Panel -->
+            <div class="glass-card glow-indigo" id="quiz-results-panel" style="display: none; text-align: center;">
+              <i class="fa-solid fa-circle-check" style="color: var(--success); font-size: 4rem; margin-bottom: 1rem;"></i>
+              <h2>Quiz Completed!</h2>
+              <div class="stat-value" id="quiz-final-score">80%</div>
+              <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Great practice. Review your weak domains in the placement roadmap.</p>
+              <button class="btn btn-outline" onclick="window.resetQuizArena()">Back to Domains</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. LIVE TEST LOBBY & LEADERBOARD -->
+        <section id="view-live-test" class="page-view" style="display: none;">
+          <div class="section-header">
+            <h2>Live Synchronized Aptitude Test</h2>
+            <p>Join a live, real-time testing lobby created by an admin or Literary Club coordinator, solve together, and earn your certificate.</p>
+          </div>
+
+          <!-- Selection Panel: Join Lobby or Host Lobby -->
+          <div class="grid-2" id="live-selection-panel">
+            <div class="glass-card glow-cyan">
+              <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-right-to-bracket" style="color: var(--secondary); margin-right: 0.5rem;"></i>Student Join</h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Enter the 4-digit code provided by your administrator to join the synchronized testing room.</p>
+              
+              <div class="form-group">
+                <label for="student-name">Your Full Name (For Certificate)</label>
+                <input type="text" id="student-name" class="form-control" placeholder="Enter name..." readonly>
+              </div>
+              <div class="form-group">
+                <label for="room-code-input">4-Digit Room Code</label>
+                <input type="text" id="room-code-input" class="form-control" style="text-transform: uppercase;" placeholder="e.g. ABCD" maxlength="4">
+              </div>
+              <button class="btn btn-secondary" id="btn-join-room" style="width: 100%;">Join Room Lobby</button>
+            </div>
+
+            <div class="glass-card glow-indigo" id="admin-create-room-panel">
+              <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-gears" style="color: var(--primary); margin-right: 0.5rem;"></i>Admin Panel</h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Host a synchronized aptitude sprint. Manage real-time timer countdowns, start tests, and export standings.</p>
+              
+              <div class="form-group">
+                <label for="lobby-mode-select">Lobby Mode</label>
+                <select id="lobby-mode-select" class="form-control" onchange="window.toggleLobbyFocusGroup()">
+                  <option value="aptitude" selected>Aptitude MCQ Sprint</option>
+                  <option value="interview">AI Spoken Mock Interview</option>
+                </select>
+              </div>
+              <div class="form-group" id="lobby-interview-focus-group" style="display: none;">
+                <label for="lobby-interview-focus">Interview Focus Category</label>
+                <select id="lobby-interview-focus" class="form-control">
+                  <option value="hr" selected>Behavioral & HR (Leadership, conflicts, values)</option>
+                  <option value="technical">Technical Lead (OOPs, DBMS, System design concepts)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="test-duration">Test Duration (Minutes)</label>
+                <select id="test-duration" class="form-control">
+                  <option value="60">1 Minute (For Demo/Testing)</option>
+                  <option value="180">3 Minutes (Quick Test)</option>
+                  <option value="300" selected>5 Minutes (Standard Sprint)</option>
+                  <option value="600">10 Minutes (Intense Practice)</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" id="btn-create-room" style="width: 100%;">Create Live Session</button>
+            </div>
+          </div>
+
+          <!-- LOBBY SCREEN (Waiting Room) -->
+          <div class="glass-card" id="live-lobby-panel" style="display: none; margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <span class="badge badge-info" style="margin-bottom: 0.5rem;">Live Test Lobby</span>
+                <h2>Room Code: <span id="lobby-code-display" style="color: var(--secondary); font-family: var(--font-display); font-size: 2rem;">XXXX</span></h2>
+              </div>
+              <div id="admin-controls-box" style="display: none;">
+                <button class="btn btn-primary" id="btn-start-live-test">Start Test For Everyone</button>
+              </div>
+              <div id="student-waiting-box" style="display: none; color: var(--text-muted);">
+                <i class="fa-solid fa-spinner fa-spin" style="margin-right: 0.5rem;"></i> Waiting for coordinator to launch test...
+              </div>
+            </div>
+
+            <h3>Active Participants:</h3>
+            <div class="lobby-users-list" id="lobby-users-container">
+              <!-- Users will pop up here in real time -->
+              <p style="color: var(--text-muted); font-size: 0.85rem;" id="lobby-empty-text">No one has joined yet. Share the code above!</p>
+            </div>
+          </div>
+
+          <!-- SYNCHRONIZED TEST RUNNING SCREEN -->
+          <div class="glass-card glow-indigo" id="live-test-panel" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.75rem; margin-bottom: 1.5rem;">
+              <span id="live-progress-display">Question 1/10</span>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fa-regular fa-clock" style="color: var(--danger);"></i>
+                <span id="live-timer-display" style="font-weight: 700; font-family: var(--font-display); color: var(--danger); font-size: 1.25rem;">05:00</span>
+              </div>
+            </div>
+
+            <!-- Single question layout showing one question at a time -->
+            <div id="live-questions-wrapper">
+              <h3 id="live-question-title" style="margin-bottom: 1.5rem;">Live question template</h3>
+              <div class="options-list" id="live-options-container">
+                <!-- Live Options buttons -->
+              </div>
+            </div>
+
+            <!-- Multiplayer Spoken Mock Interview layout -->
+            <div id="live-interview-wrapper" style="display: none;">
+              <div class="grid-main" style="grid-template-columns: 1.2fr 0.8fr; gap: 1.5rem;">
+                <!-- Left: Question chat & Microphone response area -->
+                <div>
+                  <div class="glass-card" style="margin-bottom: 1rem; background: rgba(2, 2, 3, 0.4); border-color: var(--border-light);">
+                    <div class="interview-chat" id="live-interview-chat-container" style="height: 200px; overflow-y: auto; padding: 10px;">
+                      <!-- Interviewer chat bubbles will go here -->
+                    </div>
+                  </div>
+                  
+                  <div class="glass-card" style="background: rgba(2, 2, 3, 0.4); border-color: var(--border-light);">
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                      <label for="live-interview-text-answer" style="font-size: 0.85rem; font-weight: 600;">Your Response</label>
+                      <textarea id="live-interview-text-answer" class="form-control" style="min-height: 80px; font-size: 0.9rem;" placeholder="Click 'Start Microphone' to speak or type your response here..."></textarea>
+                    </div>
+
+                    <div class="voice-visualizer-container" style="padding: 1rem; margin-top: 1rem; flex-direction: row; gap: 1rem;">
+                      <div class="soundwave-box" id="live-voice-wave-box" style="height: 40px;">
+                        <div class="soundwave-bar"></div>
+                        <div class="soundwave-bar"></div>
+                        <div class="soundwave-bar"></div>
+                        <div class="soundwave-bar"></div>
+                        <div class="soundwave-bar"></div>
+                        <div class="soundwave-bar"></div>
+                        <div class="soundwave-bar"></div>
+                      </div>
+                      <span id="live-voice-mic-status" style="font-size: 0.85rem; color: var(--text-muted);">Microphone is inactive.</span>
+                    </div>
+
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                      <button class="btn btn-outline" id="btn-live-mic-toggle" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+                        <i class="fa-solid fa-microphone"></i> <span id="live-mic-btn-text">Start Microphone</span>
+                      </button>
+                      <button class="btn btn-primary" id="btn-live-submit-answer" style="flex-grow: 1; font-size: 0.85rem; padding: 0.5rem 1rem;">Submit Response</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right: Real-time feedback scorecard for the current question -->
+                <div class="glass-card" style="background: rgba(2, 2, 3, 0.4); border-color: var(--border-light);">
+                  <h4 style="margin-bottom: 0.75rem; font-size: 1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">AI Response Scorecard</h4>
+                  
+                  <div id="live-ai-evaluation-results" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                      <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Current Grade:</span>
+                      <span class="badge badge-success" id="live-eval-grade" style="font-size: 0.85rem; padding: 0.35rem 0.75rem;">A Grade</span>
+                    </div>
+
+                    <div style="margin-bottom: 0.75rem;">
+                      <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.2rem;">
+                        <span>Technical Accuracy</span>
+                        <strong id="live-score-tech">0%</strong>
+                      </div>
+                      <div style="height: 4px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                        <div id="live-bar-tech" style="height: 100%; background: var(--primary); border-radius: 4px; width: 0%;"></div>
+                      </div>
+                    </div>
+
+                    <div style="margin-bottom: 0.75rem;">
+                      <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.2rem;">
+                        <span>Grammar & Vocabulary</span>
+                        <strong id="live-score-grammar">0%</strong>
+                      </div>
+                      <div style="height: 4px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                        <div id="live-bar-grammar" style="height: 100%; background: var(--secondary); border-radius: 4px; width: 0%;"></div>
+                      </div>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                      <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.2rem;">
+                        <span>Structure & Flow</span>
+                        <strong id="live-score-structure">0%</strong>
+                      </div>
+                      <div style="height: 4px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                        <div id="live-bar-structure" style="height: 100%; background: var(--success); border-radius: 4px; width: 0%;"></div>
+                      </div>
+                    </div>
+
+                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light); border-radius: 8px; padding: 8px; font-size: 0.8rem; max-height: 120px; overflow-y: auto;">
+                      <strong style="color: var(--secondary-bright); display: block; margin-bottom: 2px;">Model Phrasing Suggestion:</strong>
+                      <p id="live-eval-suggested" style="color: var(--text-desc); line-height: 1.35; font-style: italic;"></p>
+                    </div>
+                  </div>
+
+                  <div id="live-ai-evaluation-placeholder" style="text-align: center; padding: 2rem 0; color: var(--text-muted); font-size: 0.85rem;">
+                    <i class="fa-solid fa-brain" style="font-size: 2rem; margin-bottom: 0.5rem; display: block; opacity: 0.3;"></i>
+                    Answer the prompt and submit to view instant scorecard analysis.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 2rem;">
+              <button class="btn btn-outline" id="btn-live-prev">Previous</button>
+              <button class="btn btn-primary" id="btn-live-next">Next</button>
+            </div>
+          </div>
+
+          <!-- SCOREBOARD & CERTIFICATE DOWNLOAD PANELS -->
+          <div id="live-results-panel" style="display: none;">
+            <div class="grid-main">
+              <div class="glass-card">
+                <h3>Live Standings / Results</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Leaderboard updates in real-time as peers complete the test.</p>
+                <table class="leaderboard-table">
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>Student</th>
+                      <th>Score</th>
+                      <th>Accuracy</th>
+                      <th>Time Taken</th>
+                    </tr>
+                  </thead>
+                  <tbody id="leaderboard-tbody">
+                    <!-- Sockets will fill this live -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Winner Certificate Download Column -->
+              <div class="glass-card glow-indigo" id="certificate-column" style="display: none;">
+                <h3>Aptitude Milestone Certificate</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem;">Top performers (passing score >= 60%) qualify for this certified placement-ready credential.</p>
+                
+                <div class="certificate-preview-container">
+                  <div class="cert-frame" id="certificate-frame">
+                    <div class="cert-header">KLECET Literary & Coding Club</div>
+                    <div class="cert-title">Certificate of Merit</div>
+                    <div class="cert-text">This is to certify that</div>
+                    <div class="cert-name" id="cert-recipient-name">John Doe</div>
+                    <div class="cert-text">has successfully completed the live placement aptitude test</div>
+                    <div class="cert-text">conducted on <span id="cert-date">Date</span> with a merit score of <span id="cert-score">0%</span>.</div>
+                    
+                    <div class="cert-footer">
+                      <div>
+                        <strong>Placement Cell Officer</strong>
+                        <p>KLECET</p>
+                      </div>
+                      <div>
+                        <strong>Literary Club President</strong>
+                        <p>Tech Wing Coordinators</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button class="btn btn-primary" id="btn-download-pdf" style="width: 100%;">
+                    <i class="fa-solid fa-download"></i> Download PDF Certificate
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div style="margin-top: 1.5rem; text-align: center;">
+              <button class="btn btn-outline" id="btn-exit-test">Exit Live Test Lounge</button>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- 7. AI MOCK INTERVIEW VIEW -->
+        <section id="view-ai-interview" class="page-view" style="display: none;">
+          <div class="section-header">
+            <h2>AI Mock Interviewer</h2>
+            <p>Perform live voice simulations, dictating answers to an AI Interviewer who scores and phrasings your answers.</p>
+          </div>
+
+          <!-- Configuration Panel -->
+          <div class="glass-card" id="interview-config-panel" style="max-width: 600px; margin: 0 auto;">
+            <h3 style="margin-bottom: 1.5rem; text-align: center;">Select Interview Profile</h3>
+            <div class="form-group">
+              <label for="interview-type">Interview Focus</label>
+              <select id="interview-type" class="form-control">
+                <option value="hr">Behavioral & HR (Leadership, conflicts, values)</option>
+                <option value="technical">Technical Lead (OOPs, DBMS, System design concepts)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="candidate-name-input">Your Nickname</label>
+              <input type="text" id="candidate-name-input" class="form-control" placeholder="e.g. CodeStar" readonly>
+            </div>
+
+            <div class="form-group">
+              <label for="gemini-api-key">Gemini API Key (Optional)</label>
+              <input type="password" id="gemini-api-key" class="form-control" placeholder="Enter API Key to enable real AI evaluation...">
+              <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem;">Leave blank for local simulated AI. Stored securely in your browser's LocalStorage.</span>
+            </div>
+
+            <button class="btn btn-primary" id="btn-start-interview" style="width: 100%; margin-top: 1rem;">Launch Simulation</button>
+          </div>
+
+          <!-- Interview Room Panel -->
+          <div class="grid-main" id="interview-room-panel" style="display: none;">
+            <div>
+              <div class="glass-card glow-indigo" style="margin-bottom: 1.5rem;">
+                <div class="interview-chat" id="interview-chat-container">
+                  <!-- Dialog bubbles injected here -->
+                </div>
+              </div>
+
+              <!-- Microphone / Answer panel -->
+              <div class="glass-card">
+                <div class="form-group">
+                  <label for="interview-text-answer">Your Answer</label>
+                  <textarea id="interview-text-answer" class="form-control" placeholder="Click 'Start Microphone' to dictate your answer or type it directly here..."></textarea>
+                </div>
+
+                <div class="voice-visualizer-container">
+                  <div class="soundwave-box" id="voice-wave-box">
+                    <div class="soundwave-bar"></div>
+                    <div class="soundwave-bar"></div>
+                    <div class="soundwave-bar"></div>
+                    <div class="soundwave-bar"></div>
+                    <div class="soundwave-bar"></div>
+                    <div class="soundwave-bar"></div>
+                    <div class="soundwave-bar"></div>
+                  </div>
+                  <span id="voice-mic-status" style="font-size: 0.85rem; color: var(--text-muted);">Microphone is inactive.</span>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+                  <button class="btn btn-outline" id="btn-mic-toggle">
+                    <i class="fa-solid fa-microphone"></i> <span id="mic-btn-text">Start Microphone</span>
+                  </button>
+                  <button class="btn btn-primary" id="btn-submit-answer" style="flex-grow: 1;">Submit Answer</button>
+                  <button class="btn btn-danger" id="btn-end-interview">Finish Interview</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Scorecard and Suggestions (Shown dynamically) -->
+            <div class="glass-card" id="interview-evaluation-panel">
+              <h3>Real-time AI Feedback</h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Evaluation scorecards will output feedback immediately on answer submission.</p>
+              
+              <div id="ai-evaluation-results" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                  <h4 style="font-size: 1.25rem;">Scorecard</h4>
+                  <span class="badge badge-success" id="eval-grade" style="font-size: 1rem; padding: 0.5rem 1rem;">A Grade</span>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.25rem;">
+                    <span>Technical & Logical Depth</span>
+                    <strong id="score-tech">80%</strong>
+                  </div>
+                  <div style="height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                    <div id="bar-tech" style="height: 100%; background: var(--primary); border-radius: 10px; width: 80%;"></div>
+                  </div>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.25rem;">
+                    <span>Verbal & Grammatical Accuracy</span>
+                    <strong id="score-grammar">75%</strong>
+                  </div>
+                  <div style="height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                    <div id="bar-grammar" style="height: 100%; background: var(--secondary); border-radius: 10px; width: 75%;"></div>
+                  </div>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.25rem;">
+                    <span>Vocabulary & Structure</span>
+                    <strong id="score-structure">85%</strong>
+                  </div>
+                  <div style="height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                    <div id="bar-structure" style="height: 100%; background: var(--success); border-radius: 10px; width: 85%;"></div>
+                  </div>
+                </div>
+
+                <div class="template-box" style="margin-top: 1rem; background: rgba(139, 92, 246, 0.05); border-color: var(--primary);">
+                  <strong>What you said:</strong>
+                  <p id="eval-said" style="font-size: 0.85rem; color: var(--text-muted); margin: 0.5rem 0;"></p>
+                  <strong>Suggested phrasing (Literary enhancement):</strong>
+                  <p id="eval-suggested" style="font-size: 0.85rem; color: var(--text-primary); font-weight: 500;"></p>
+                </div>
+              </div>
+
+              <!-- Placeholder when no answer has been submitted -->
+              <div id="ai-evaluation-placeholder" style="text-align: center; color: var(--text-muted); padding: 3rem 0;">
+                <i class="fa-solid fa-brain" style="font-size: 3rem; margin-bottom: 1rem; display: block; opacity: 0.3;"></i>
+                Waiting for answer submission...
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8. ABOUT KLECET VIEW -->
+        <section id="view-about-klecet" class="page-view" style="display: none;">
+          <div class="section-header">
+            <h2>KLECET Chikodi - Campus & Club</h2>
+            <p>Official leadership profiles and placement wing overview.</p>
+          </div>
+
+          <div class="grid-main">
+            <div class="glass-card glow-indigo">
+              <h3 style="margin-bottom: 1.5rem;"><i class="fa-solid fa-university" style="color: var(--primary); margin-right: 0.5rem;"></i>KLE College of Engineering & Technology</h3>
+              <p style="color: var(--text-desc); font-size: 0.95rem; margin-bottom: 1.5rem;">
+                KLE College of Engineering and Technology (KLECET), Chikodi was established in the year 2008 under the umbrella of the prestigious <strong>KLE Society, Belagavi</strong>. Affiliated to Visvesvaraya Technological University (VTU) and approved by AICTE, KLECET Chikodi offers state-of-the-art undergraduate programs in Computer Science, Electronics, Civil, and Mechanical Engineering.
+              </p>
+              
+              <h4 style="margin-bottom: 0.75rem; color: #fff;">The Training & Placement Cell</h4>
+              <p style="color: var(--text-desc); font-size: 0.95rem; margin-bottom: 1.5rem;">
+                The Placement wing at KLECET acts as a robust bridge connecting engineering students with global IT recruiters. Through regular industry interactions, coding camps, and soft skill workshops organized in collaboration with the club, KLECET places students in top MNCs including TCS, Wipro, Infosys, Capgemini, Cognizant, and IBM.
+              </p>
+
+              <h4 style="margin-bottom: 0.75rem; color: #fff;">The Literary & Coding Club Wing</h4>
+              <p style="color: var(--text-desc); font-size: 0.95rem;">
+                Our Literary Club (Tech Wing) is dedicated to building the "Complete Engineer". We believe that strong technical coding skills can secure an interview, but verbal ability, logical deduction, resume articulation, and conversational confidence are what crack the offer. LitCrack is custom-built to train our students at KLECET in these exact aspects.
+              </p>
+            </div>
+
+            <!-- College Leadership Column -->
+            <div class="glass-card">
+              <h3 style="margin-bottom: 1.5rem;"><i class="fa-solid fa-users" style="color: var(--secondary); margin-right: 0.5rem;"></i>Leadership Profiles</h3>
+              
+              <div style="display: flex; flex-direction: column; gap: 1.5rem;" id="about-leadership-container">
+                <!-- Faculties loaded dynamically via API -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 9. ADMIN DECK VIEW -->
+        <section id="view-admin-deck" class="page-view" style="display: none;">
+          <div class="section-header">
+            <h2>Admin Control Deck</h2>
+            <p>Manage KLECET's student database, update faculty rosters, and monitor live tests.</p>
+          </div>
+          
+          <div class="grid-main">
+            <!-- Left Side: Roster and Database grids -->
+            <div class="glass-card glow-indigo">
+              <div style="display: flex; gap: 1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                <button class="btn btn-outline" id="btn-admin-tab-students">Student Records</button>
+                <button class="btn btn-outline" id="btn-admin-tab-faculties">Faculty Roster</button>
+                <button class="btn btn-outline" id="btn-admin-tab-announcements">Broadcast Announcements</button>
+                <button class="btn btn-outline" id="btn-admin-tab-questions">Manage Questions</button>
+              </div>
+
+              <!-- Panel 1: Students Table -->
+              <div id="admin-panel-students">
+                <h4 style="margin-bottom: 1rem; color: #fff;">Registered KLECET Aspirants</h4>
+                <div style="overflow-x: auto;">
+                  <table class="leaderboard-table" style="font-size: 0.9rem;">
+                    <thead>
+                      <tr>
+                        <th>Student Name</th>
+                        <th>USN</th>
+                        <th>Branch</th>
+                        <th>Email</th>
+                        <th>Score History</th>
+                      </tr>
+                    </thead>
+                    <tbody id="admin-students-tbody">
+                      <!-- Injected dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Panel 2: Faculty Editor -->
+              <div id="admin-panel-faculties" style="display: none;">
+                <h4 style="margin-bottom: 1rem; color: #fff;">Manage Faculty Directory</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1rem;" class="grid-2">
+                  <div class="form-group">
+                    <label for="new-faculty-name">Faculty Name</label>
+                    <input type="text" id="new-faculty-name" class="form-control" placeholder="e.g. Dr. Ramesh Patil">
+                  </div>
+                  <div class="form-group">
+                    <label for="new-faculty-role">Designation / Role</label>
+                    <input type="text" id="new-faculty-role" class="form-control" placeholder="e.g. Associate Professor">
+                  </div>
+                </div>
+                <button class="btn btn-primary" id="btn-add-faculty-submit" style="margin-bottom: 2rem;">Add Faculty Member</button>
+
+                <h4 style="margin-bottom: 1rem; color: #fff;">Existing Faculty List</h4>
+                <div style="overflow-x: auto;">
+                  <table class="leaderboard-table" style="font-size: 0.9rem;">
+                    <thead>
+                      <tr>
+                        <th>Faculty Name</th>
+                        <th>Designation</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="admin-faculties-tbody">
+                      <!-- Injected dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Panel 3: Announcements Broadcast -->
+              <div id="admin-panel-announcements" style="display: none;">
+                <h4 style="margin-bottom: 1rem; color: #fff;">Broadcast & Email Announcement</h4>
+                <div class="form-group">
+                  <label for="new-announcement-title">Announcement Title</label>
+                  <input type="text" id="new-announcement-title" class="form-control" placeholder="e.g. TCS recruitment drive for 2027 batch">
+                </div>
+                <div class="form-group">
+                  <label for="new-announcement-tag">Category / Target</label>
+                  <select id="new-announcement-tag" class="form-control">
+                    <option value="Placement Drive">Placement Drive</option>
+                    <option value="Club Update">Club Update</option>
+                    <option value="Training Seminar">Training Seminar</option>
+                    <option value="Quiz Arena">Quiz Arena Update</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="new-announcement-message">Announcement Message (Email Body)</label>
+                  <textarea id="new-announcement-message" class="form-control" style="min-height: 120px;" placeholder="Write message details... All registered students will be emailed automatically."></textarea>
+                </div>
+                <button class="btn btn-primary" id="btn-publish-announcement" style="margin-bottom: 2rem;">
+                  <i class="fa-solid fa-paper-plane"></i> Publish & Email Students
+                </button>
+
+                <h4 style="margin-bottom: 1rem; color: #fff;">Broadcast History</h4>
+                <div style="overflow-x: auto;">
+                  <table class="leaderboard-table" style="font-size: 0.9rem;">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Students Notified</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="admin-announcements-tbody">
+                      <!-- Injected dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Panel 4: Manage Questions (Aptitude & Interview) -->
+              <div id="admin-panel-questions" style="display: none;">
+                <h4 style="margin-bottom: 1rem; color: #fff;">Question Database Manager</h4>
+                
+                <!-- Sub tabs for Aptitude vs Interview -->
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 8px; width: fit-content; border: 1px solid var(--border-light);">
+                  <button class="btn btn-outline active" id="btn-subtab-aptitude" style="padding: 0.45rem 1rem; font-size: 0.8rem; border: none;">Aptitude MCQs</button>
+                  <button class="btn btn-outline" id="btn-subtab-interview" style="padding: 0.45rem 1rem; font-size: 0.8rem; border: none;">Interview Prompts</button>
+                </div>
+
+                <!-- SUBPANEL A: Aptitude MCQ Manager -->
+                <div id="subpanel-aptitude">
+                  <h5 style="margin-bottom: 1rem; color: var(--secondary-bright);">Add New Aptitude Question (MCQ)</h5>
+                  <div class="form-group">
+                    <label for="mcq-question">Question Text</label>
+                    <input type="text" id="mcq-question" class="form-control" placeholder="e.g. A train running at 60km/h...">
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;" class="grid-2">
+                    <div class="form-group">
+                      <label for="mcq-opt0">Option 1 (Index 0)</label>
+                      <input type="text" id="mcq-opt0" class="form-control" placeholder="Option A">
+                    </div>
+                    <div class="form-group">
+                      <label for="mcq-opt1">Option 2 (Index 1)</label>
+                      <input type="text" id="mcq-opt1" class="form-control" placeholder="Option B">
+                    </div>
+                    <div class="form-group">
+                      <label for="mcq-opt2">Option 3 (Index 2)</label>
+                      <input type="text" id="mcq-opt2" class="form-control" placeholder="Option C">
+                    </div>
+                    <div class="form-group">
+                      <label for="mcq-opt3">Option 4 (Index 3)</label>
+                      <input type="text" id="mcq-opt3" class="form-control" placeholder="Option D">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="mcq-answer">Correct Answer Option</label>
+                    <select id="mcq-answer" class="form-control">
+                      <option value="0">Option 1 (Index 0)</option>
+                      <option value="1">Option 2 (Index 1)</option>
+                      <option value="2">Option 3 (Index 2)</option>
+                      <option value="3">Option 4 (Index 3)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="mcq-explanation">Explanation (Shown after answering)</label>
+                    <input type="text" id="mcq-explanation" class="form-control" placeholder="Explain why the answer is correct...">
+                  </div>
+                  <button class="btn btn-secondary" id="btn-add-mcq" style="margin-bottom: 2rem;">Add MCQ Question</button>
+
+                  <h5 style="margin-bottom: 1rem; color: #fff;">Existing Aptitude Questions</h5>
+                  <div style="overflow-x: auto;">
+                    <table class="leaderboard-table" style="font-size: 0.85rem;">
+                      <thead>
+                        <tr>
+                          <th>Question</th>
+                          <th>Options</th>
+                          <th>Correct Index</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody id="admin-mcq-tbody">
+                        <!-- Injected dynamically -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- SUBPANEL B: Interview Prompts Manager -->
+                <div id="subpanel-interview" style="display: none;">
+                  <h5 style="margin-bottom: 1rem; color: var(--primary-bright);">Add New Interview Prompt</h5>
+                  <div class="form-group">
+                    <label for="int-category">Interview Focus</label>
+                    <select id="int-category" class="form-control">
+                      <option value="hr">Behavioral & HR</option>
+                      <option value="technical">Technical Lead</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="int-question">Interviewer Prompt Question</label>
+                    <input type="text" id="int-question" class="form-control" placeholder="e.g. Tell me about a time you worked in a high-pressure environment.">
+                  </div>
+                  <div class="form-group">
+                    <label for="int-keywords">Keywords to Evaluate (Comma-separated)</label>
+                    <input type="text" id="int-keywords" class="form-control" placeholder="e.g. stress, manage, timeline, prioritized, communication">
+                  </div>
+                  <div class="form-group">
+                    <label for="int-good">Suggested Professional Phrasing</label>
+                    <textarea id="int-good" class="form-control" style="min-height: 80px;" placeholder="Provide the model answer that candidates will be shown..."></textarea>
+                  </div>
+                  <button class="btn btn-primary" id="btn-add-int" style="margin-bottom: 2rem;">Add Interview Prompt</button>
+
+                  <h5 style="margin-bottom: 1rem; color: #fff;">Existing Interview Prompts</h5>
+                  <div style="overflow-x: auto;">
+                    <table class="leaderboard-table" style="font-size: 0.85rem;">
+                      <thead>
+                        <tr>
+                          <th>Category</th>
+                          <th>Prompt Question</th>
+                          <th>Evaluation Keywords</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody id="admin-int-tbody">
+                        <!-- Injected dynamically -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Side: Stats and Info -->
+            <div class="glass-card">
+              <h3 style="margin-bottom: 1rem;">Admin Summary</h3>
+              <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <div>
+                  <span style="font-size: 0.75rem; color: var(--secondary); font-weight: 700; text-transform: uppercase; display: block; letter-spacing: 0.5px;">Total Registrations</span>
+                  <div class="stat-value" id="admin-stat-users-count">0</div>
+                </div>
+                <div style="border-top: 1px solid var(--border-light); padding-top: 1.5rem;">
+                  <span style="font-size: 0.75rem; color: var(--primary); font-weight: 700; text-transform: uppercase; display: block; letter-spacing: 0.5px;">Portal Architect</span>
+                  <p style="font-size: 1.15rem; font-weight: 800; color: #fff; margin-top: 0.25rem;">Sajid Desai</p>
+                  <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 0.15rem;">Lead Systems Designer, KLECET</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+    </div>
+  </div>
+
+  <!-- Load socket.io client dynamically (handled via Node) -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Load Client JavaScript scripts -->
+  <script src="modules/certificate.js"></script>
+  <script src="modules/liveTest.js"></script>
+  <script src="modules/aiInterview.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

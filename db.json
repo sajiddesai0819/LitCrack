@@ -1,0 +1,200 @@
+{
+  "students": [
+    {
+      "name": "sajid desai",
+      "usn": "2KD23CS076",
+      "branch": "CSE",
+      "email": "sajiddesai0819@gmail.com",
+      "password": "sajid121",
+      "scores": [],
+      "roadmapProgress": {}
+    }
+  ],
+  "faculties": [
+    {
+      "id": 1,
+      "name": "Dr. Darshankumar D. Billur",
+      "role": "Principal, KLECET Chikodi",
+      "image": "assets/principal.png"
+    },
+    {
+      "id": 2,
+      "name": "Dr. Sandeep K.",
+      "role": "Dean - Training & Placements",
+      "image": "assets/placement_head.png"
+    },
+    {
+      "id": 3,
+      "name": "Prof. Anita Patil",
+      "role": "Literary Club Coordinator",
+      "image": "assets/club_coord.png"
+    }
+  ],
+  "admin": {
+    "email": "admin@klecet.edu.in",
+    "password": "admin123"
+  },
+  "announcements": [],
+  "aptitudeQuestions": [
+    {
+      "id": 1,
+      "question": "A train running at the speed of 60 km/hr crosses a pole in 9 seconds. What is the length of the train?",
+      "options": [
+        "120 metres",
+        "150 metres",
+        "324 metres",
+        "180 metres"
+      ],
+      "answer": 1,
+      "explanation": "Speed = 60 * (5/18) m/sec = 50/3 m/sec. Length of train = Speed * Time = (50/3) * 9 = 150 metres."
+    },
+    {
+      "id": 2,
+      "question": "If a developer writes a code block that runs in O(N log N) time, and another that runs in O(N^2) time. For N = 10^6, which one is faster and by what factor approximately?",
+      "options": [
+        "O(N log N) is ~50,000 times faster",
+        "O(N^2) is faster",
+        "They are identical in speed",
+        "O(N log N) is ~5 times faster"
+      ],
+      "answer": 0,
+      "explanation": "For N = 10^6, N log N is approx 10^6 * 20 = 2 * 10^7 operations. N^2 is 10^12 operations. 10^12 / (2 * 10^7) = 50,000 times faster."
+    },
+    {
+      "id": 3,
+      "question": "Find the odd man out: 3, 5, 11, 14, 17, 21",
+      "options": [
+        "21",
+        "14",
+        "17",
+        "11"
+      ],
+      "answer": 1,
+      "explanation": "All numbers except 14 are odd numbers. 14 is the only even number."
+    },
+    {
+      "id": 4,
+      "question": "Which data structure is best suited for implementing a LIFO (Last In, First Out) buffer?",
+      "options": [
+        "Queue",
+        "Stack",
+        "Linked List",
+        "Binary Search Tree"
+      ],
+      "answer": 1,
+      "explanation": "A Stack operates on the Last In First Out (LIFO) principle, where the last element inserted is the first one removed."
+    },
+    {
+      "id": 5,
+      "question": "Choose the word which is most nearly OPPOSITE in meaning to: 'OBSTINATE'",
+      "options": [
+        "Stubborn",
+        "Flexible",
+        "Rigid",
+        "Dogmatic"
+      ],
+      "answer": 1,
+      "explanation": "Obstinate means stubborn or refusing to change one's opinion. The opposite is flexible or compliant."
+    }
+  ],
+  "interviewQuestions": {
+    "hr": [
+      {
+        "id": 1,
+        "question": "Welcome! To start off, please tell me about a time you had to resolve a conflict with a team member during a college project. What steps did you take?",
+        "keywords": [
+          "communicate",
+          "talked",
+          "conflict",
+          "resolved",
+          "understanding",
+          "listened",
+          "middle ground",
+          "compromise"
+        ],
+        "goodPhrasing": "I initiated a private conversation to understand their perspective, reassessed our division of responsibilities, and aligned our goals to complete the milestone collectively."
+      },
+      {
+        "id": 2,
+        "question": "Thank you. How do you handle setbacks or personal failure? Can you share an example of a mistake you made and what you learned from it?",
+        "keywords": [
+          "mistake",
+          "learned",
+          "feedback",
+          "improved",
+          "responsibility",
+          "growth",
+          "corrected",
+          "setback"
+        ],
+        "goodPhrasing": "We encountered database instability which impacted our submission. Recognizing this gap, I took ownership, learned indexing optimization, and successfully stabilized the server for future builds."
+      },
+      {
+        "id": 3,
+        "question": "Excellent. Finally, why do you want to join an IT company, and how do you align your career goals with a fast-paced software team?",
+        "keywords": [
+          "skills",
+          "career",
+          "growth",
+          "learn",
+          "passion",
+          "contribute",
+          "technology",
+          "innovate",
+          "adapt"
+        ],
+        "goodPhrasing": "I want to apply my logical foundations to build scalable systems while working in a collaborative team that challenges my technical skills and fuels continuous learning."
+      }
+    ],
+    "technical": [
+      {
+        "id": 4,
+        "question": "Let's dive into some fundamentals. Can you explain what Object-Oriented Programming is and outline its four main pillars?",
+        "keywords": [
+          "class",
+          "object",
+          "inheritance",
+          "polymorphism",
+          "encapsulation",
+          "abstraction",
+          "reusability",
+          "data hiding"
+        ],
+        "goodPhrasing": "Object-Oriented Programming is a paradigm centered around objects and classes. Its four pillars—Encapsulation, Inheritance, Polymorphism, and Abstraction—help make software modular, reusable, and secure."
+      },
+      {
+        "id": 5,
+        "question": "Good. Now, what is a memory leak, and what are some strategies to identify and prevent leaks in languages like Javascript or C++?",
+        "keywords": [
+          "leak",
+          "garbage collector",
+          "pointer",
+          "allocation",
+          "reference",
+          "release",
+          "profile",
+          "cleanup",
+          "destructor"
+        ],
+        "goodPhrasing": "A memory leak occurs when allocated memory is no longer needed but is not released back to the system. We can prevent this by deallocating pointers in C++ or removing unused global references and timers in JavaScript."
+      },
+      {
+        "id": 6,
+        "question": "Understood. Can you explain the main architectural differences between SQL and NoSQL databases, and when you would choose one over the other?",
+        "keywords": [
+          "relational",
+          "schema",
+          "nosql",
+          "unstructured",
+          "scale",
+          "document",
+          "key-value",
+          "acid",
+          "mongodb",
+          "mysql"
+        ],
+        "goodPhrasing": "SQL databases are relational, schema-based, and ensure strict ACID properties. NoSQL databases are non-relational, schema-less, and scale horizontally, making them ideal for unstructured data like real-time feeds."
+      }
+    ]
+  }
+}
