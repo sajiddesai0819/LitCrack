@@ -351,42 +351,121 @@
           <div class="grid-main">
             <div>
               <div class="glass-card glow-cyan" style="margin-bottom: 1.5rem;">
-                <div class="topic-box" id="gd-topic-display">Click "Generate Topic" to start.</div>
-                
-                <div class="timer-ring" id="gd-timer-ring">02:00</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                  <h3 style="margin-bottom: 0; font-family: var(--font-display);"><i class="fa-solid fa-comments" style="color: var(--secondary); margin-right: 0.5rem;"></i>Discussion Prompt</h3>
+                  <div class="gd-mode-toggle">
+                    <button class="gd-mode-btn active" id="btn-gd-mode-random">Random Topics</button>
+                    <button class="gd-mode-btn" id="btn-gd-mode-custom">Custom Input</button>
+                  </div>
+                </div>
 
-                <div style="display: flex; justify-content: center; gap: 1rem;">
-                  <button class="btn btn-outline" id="btn-gd-generate">Generate Topic</button>
-                  <button class="btn btn-secondary" id="btn-gd-timer">Start Timer</button>
+                <div class="gd-topic-card-body" id="gd-topic-display">Click "Generate Topic" to start.</div>
+
+                <div class="gd-custom-input-container" id="gd-custom-input-container">
+                  <textarea id="gd-custom-topic-input" class="form-control" placeholder="Type or paste your custom discussion topic here..." rows="2" style="font-size: 0.9rem; resize: none;"></textarea>
+                  <button class="btn btn-outline" id="btn-gd-custom-set" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; width: fit-content; align-self: flex-end; margin-top: 0.5rem;"><i class="fa-solid fa-check" style="color: var(--secondary);"></i>Activate Topic</button>
+                </div>
+
+                <div class="gd-timer-container">
+                  <div class="gd-timer-ring-wrapper">
+                    <svg class="gd-timer-ring-svg" viewBox="0 0 140 140" width="140" height="140">
+                      <circle class="gd-timer-circle-bg" cx="70" cy="70" r="54"></circle>
+                      <circle class="gd-timer-circle-progress" id="gd-timer-circle" cx="70" cy="70" r="54" stroke-dasharray="339.292" stroke-dashoffset="0"></circle>
+                    </svg>
+                    <div class="gd-timer-text" id="gd-timer-ring">02:00</div>
+                  </div>
+                  <div class="gd-duration-presets" id="gd-duration-presets">
+                    <button class="preset-btn" data-time="60">1m</button>
+                    <button class="preset-btn active" data-time="120">2m</button>
+                    <button class="preset-btn" data-time="300">5m</button>
+                    <button class="preset-btn" data-time="600">10m</button>
+                  </div>
+                </div>
+
+                <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+                  <button class="btn btn-outline" id="btn-gd-generate"><i class="fa-solid fa-rotate" style="margin-right: 0.25rem;"></i>Generate Topic</button>
+                  <button class="btn btn-secondary" id="btn-gd-timer"><i class="fa-solid fa-play" style="margin-right: 0.25rem;" id="btn-gd-timer-icon"></i><span id="btn-gd-timer-text">Start Timer</span></button>
+                </div>
+              </div>
+
+              <!-- Sandbox Notepad -->
+              <div class="glass-card" style="margin-bottom: 1.5rem;">
+                <h3 style="margin-bottom: 0.5rem; font-family: var(--font-display);"><i class="fa-solid fa-file-signature" style="color: var(--primary); margin-right: 0.5rem;"></i>Draft Your Arguments</h3>
+                <p style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: 1rem;">Use the notepad to list facts, structure pros/cons, and build statements before the discussion.</p>
+                <textarea id="gd-notepad-draft" class="form-control gd-notepad-textarea" placeholder="Start typing your notes or click the phrasing boosters below to insert templates..."></textarea>
+                <div class="gd-notepad-footer">
+                  <div class="gd-notepad-stats">
+                    <span>Words: <strong id="gd-word-count">0</strong></span>
+                    <span>Characters: <strong id="gd-char-count">0</strong></span>
+                  </div>
+                  <div class="gd-notepad-actions">
+                    <button class="btn-notepad-action" id="btn-notepad-copy"><i class="fa-solid fa-copy"></i>Copy Draft</button>
+                    <button class="btn-notepad-action" id="btn-notepad-download"><i class="fa-solid fa-download"></i>Download</button>
+                    <button class="btn-notepad-action" id="btn-notepad-clear" style="color: var(--danger);"><i class="fa-solid fa-trash-can"></i>Clear</button>
+                  </div>
                 </div>
               </div>
 
               <div class="glass-card">
-                <h3>Vocabulary & Phrasing Booster</h3>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Stand out in a GD by using these transitional expressions:</p>
+                <h3 style="margin-bottom: 0.5rem; font-family: var(--font-display);"><i class="fa-solid fa-lightbulb" style="color: var(--primary); margin-right: 0.5rem;"></i>Vocabulary & Phrasing Booster</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Stand out in a GD by copying or inserting these transitional templates:</p>
                 <div style="display: flex; flex-direction: column; gap: 0.75rem;" id="gd-templates-container">
                   <!-- Templates dynamically loaded -->
                 </div>
               </div>
             </div>
 
+            <!-- Scoring Rubrics -->
             <div class="glass-card">
-              <h3>GD Evaluation Rubrics</h3>
-              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">What panel moderators look for:</p>
-              <div style="display: flex; flex-direction: column; gap: 1rem;">
-                <div>
-                  <strong>Initiation Skills</strong>
-                  <p style="font-size: 0.85rem; color: var(--text-muted);">Opening the discussion with context, facts, and structure. Scores high marks.</p>
+              <h3 style="margin-bottom: 0.5rem; font-family: var(--font-display);"><i class="fa-solid fa-chart-simple" style="color: var(--secondary); margin-right: 0.5rem;"></i>GD Performance Scorecard</h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Evaluate speaking fluency, structure, and active listening criteria:</p>
+              
+              <div class="rubrics-score-panel">
+                <div class="rubrics-total-score">
+                  <span id="gd-total-score-val">0</span><span>/20</span>
                 </div>
-                <div>
-                  <strong>Active Listening</strong>
-                  <p style="font-size: 0.85rem; color: var(--text-muted);">Acknowledging previous speakers' statements before adding your point.</p>
+                <div class="rubrics-grade-badge practicing" id="gd-grade-badge">Practicing</div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 1.15rem;">
+                <div class="rubric-slider-item">
+                  <div class="rubric-slider-header">
+                    <strong>Initiation Skills</strong>
+                    <span class="rubric-slider-val" id="val-rubric-init">0 / 5</span>
+                  </div>
+                  <p class="rubric-slider-desc">Opening discussion with clear context, structure, definition, and facts.</p>
+                  <input type="range" min="0" max="5" value="0" class="rubric-slider-input" id="slide-rubric-init">
                 </div>
-                <div>
-                  <strong>Structure & Logic</strong>
-                  <p style="font-size: 0.85rem; color: var(--text-muted);">Speaking concisely. Use point-wise reasoning (e.g. Pros vs Cons).</p>
+
+                <div class="rubric-slider-item">
+                  <div class="rubric-slider-header">
+                    <strong>Active Listening</strong>
+                    <span class="rubric-slider-val" id="val-rubric-listen">0 / 5</span>
+                  </div>
+                  <p class="rubric-slider-desc">Acknowledging previous speakers' points and building proper transition statements.</p>
+                  <input type="range" min="0" max="5" value="0" class="rubric-slider-input" id="slide-rubric-listen">
+                </div>
+
+                <div class="rubric-slider-item">
+                  <div class="rubric-slider-header">
+                    <strong>Structure & Logic</strong>
+                    <span class="rubric-slider-val" id="val-rubric-structure">0 / 5</span>
+                  </div>
+                  <p class="rubric-slider-desc">Speaking with point-wise clarity. Presenting facts, logical pros vs cons, and reasoning.</p>
+                  <input type="range" min="0" max="5" value="0" class="rubric-slider-input" id="slide-rubric-structure">
+                </div>
+
+                <div class="rubric-slider-item">
+                  <div class="rubric-slider-header">
+                    <strong>Vocabulary & Grammar</strong>
+                    <span class="rubric-slider-val" id="val-rubric-vocab">0 / 5</span>
+                  </div>
+                  <p class="rubric-slider-desc">Utilizing formal expressions, bridging phrases, and avoiding verbal pauses (uh/um/like).</p>
+                  <input type="range" min="0" max="5" value="0" class="rubric-slider-input" id="slide-rubric-vocab">
                 </div>
               </div>
+
+              <button class="btn btn-outline rubrics-reset-btn" id="btn-rubrics-reset" style="margin-top: 1rem;"><i class="fa-solid fa-rotate-left" style="margin-right: 0.25rem;"></i>Reset Scorecard</button>
             </div>
           </div>
         </section>

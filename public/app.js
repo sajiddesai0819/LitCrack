@@ -1259,17 +1259,145 @@ document.addEventListener('DOMContentLoaded', () => {
     { title: "Summarizing / Closing:", text: "\"As we near the end of our discussion, it is evident that while... is beneficial, a hybrid approach combining... is the ideal solution.\"" }
   ];
 
+  // DOM Elements
   const gdTopicDisplay = document.getElementById('gd-topic-display');
   const btnGdGenerate = document.getElementById('btn-gd-generate');
   const btnGdTimer = document.getElementById('btn-gd-timer');
+  const btnGdTimerIcon = document.getElementById('btn-gd-timer-icon');
+  const btnGdTimerText = document.getElementById('btn-gd-timer-text');
   const gdTimerRing = document.getElementById('gd-timer-ring');
-  let gdTimerInterval = null;
-  let gdTimeLeft = 120; // 2 minutes
+  const gdTimerCircle = document.getElementById('gd-timer-circle');
+  
+  // Custom Mode Toggle
+  const btnGdModeRandom = document.getElementById('btn-gd-mode-random');
+  const btnGdModeCustom = document.getElementById('btn-gd-mode-custom');
+  const gdCustomInputContainer = document.getElementById('gd-custom-input-container');
+  const gdCustomTopicInput = document.getElementById('gd-custom-topic-input');
+  const btnGdCustomSet = document.getElementById('btn-gd-custom-set');
 
+  // Notepad Elements
+  const gdNotepadDraft = document.getElementById('gd-notepad-draft');
+  const gdWordCount = document.getElementById('gd-word-count');
+  const gdCharCount = document.getElementById('gd-char-count');
+  const btnNotepadCopy = document.getElementById('btn-notepad-copy');
+  const btnNotepadDownload = document.getElementById('btn-notepad-download');
+  const btnNotepadClear = document.getElementById('btn-notepad-clear');
+
+  // Rubrics
+  const slideRubricInit = document.getElementById('slide-rubric-init');
+  const slideRubricListen = document.getElementById('slide-rubric-listen');
+  const slideRubricStructure = document.getElementById('slide-rubric-structure');
+  const slideRubricVocab = document.getElementById('slide-rubric-vocab');
+  
+  const valRubricInit = document.getElementById('val-rubric-init');
+  const valRubricListen = document.getElementById('val-rubric-listen');
+  const valRubricStructure = document.getElementById('val-rubric-structure');
+  const valRubricVocab = document.getElementById('val-rubric-vocab');
+
+  const gdTotalScoreVal = document.getElementById('gd-total-score-val');
+  const gdGradeBadge = document.getElementById('gd-grade-badge');
+  const btnRubricsReset = document.getElementById('btn-rubrics-reset');
+
+  // Global State Variables
+  let gdTimerInterval = null;
+  let gdTimeTotal = 120; // Default: 2 minutes (120 seconds)
+  let gdTimeLeft = 120;
+  const GD_TIMER_CIRCUMFERENCE = 339.292; // 2 * PI * 54
+
+  // In-app Toast Notification System
+  function showGdToast(message, isWarning = false) {
+    const existing = document.querySelectorAll('.gd-toast-notify');
+    existing.forEach(t => t.remove());
+
+    const toast = document.createElement('div');
+    toast.className = 'gd-toast-notify' + (isWarning ? ' timer-finished' : '');
+    toast.innerHTML = `
+      <i class="fa-solid ${isWarning ? 'fa-bell fa-bounce' : 'fa-circle-check'}" style="color: ${isWarning ? 'var(--danger)' : 'var(--secondary)'}; font-size: 1.1rem;"></i>
+      <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add('out-anim');
+      setTimeout(() => toast.remove(), 400);
+    }, 3500);
+  }
+
+  // Play synthetic tone on timeout (using AudioContext)
+  function playBeepTone() {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+      gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      oscillator.start();
+      gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 1.2);
+      oscillator.stop(audioCtx.currentTime + 1.2);
+    } catch (e) {
+      console.log("AudioContext blocked or not supported.");
+    }
+  }
+
+  // Set topic card text with flip/reveal animation
+  function setTopicText(text) {
+    if (!gdTopicDisplay) return;
+    gdTopicDisplay.classList.remove('reveal-anim');
+    void gdTopicDisplay.offsetWidth; // Force reflow
+    gdTopicDisplay.innerText = text;
+    gdTopicDisplay.classList.add('reveal-anim');
+  }
+
+  // Toggle Mode Selection
+  if (btnGdModeRandom && btnGdModeCustom) {
+    btnGdModeRandom.addEventListener('click', () => {
+      btnGdModeRandom.classList.add('active');
+      btnGdModeCustom.classList.remove('active');
+      if (btnGdGenerate) btnGdGenerate.style.display = 'inline-flex';
+      if (gdCustomInputContainer) gdCustomInputContainer.style.display = 'none';
+    });
+
+    btnGdModeCustom.addEventListener('click', () => {
+      btnGdModeCustom.classList.add('active');
+      btnGdModeRandom.classList.remove('active');
+      if (btnGdGenerate) btnGdGenerate.style.display = 'none';
+      if (gdCustomInputContainer) gdCustomInputContainer.style.display = 'flex';
+    });
+  }
+
+  // Custom Topic Set Handler
+  if (btnGdCustomSet && gdCustomTopicInput) {
+    btnGdCustomSet.addEventListener('click', () => {
+      const text = gdCustomTopicInput.value.trim();
+      if (!text) {
+        showGdToast("Please enter a custom topic first.", true);
+        return;
+      }
+      setTopicText(text);
+      showGdToast("Custom topic activated! Start drafting your points below.");
+      
+      // Increment GD count for student practice session
+      let currentCount = parseInt(localStorage.getItem('litcrack_gd_count') || '0');
+      const newCount = currentCount + 1;
+      localStorage.setItem('litcrack_gd_count', newCount);
+      updateDashboardStats();
+      if (currentUser && currentUser.role === 'student') {
+        window.syncStudentProgressToServer({ gdCount: newCount });
+      }
+
+      // Reset timer
+      resetGdTimer();
+    });
+  }
+
+  // Topic Generator Button (Random Mode)
   if (btnGdGenerate) {
     btnGdGenerate.addEventListener('click', () => {
       const idx = Math.floor(Math.random() * GD_TOPICS.length);
-      gdTopicDisplay.innerText = GD_TOPICS[idx];
+      setTopicText(GD_TOPICS[idx]);
       
       let currentCount = parseInt(localStorage.getItem('litcrack_gd_count') || '0');
       const newCount = currentCount + 1;
@@ -1280,51 +1408,281 @@ document.addEventListener('DOMContentLoaded', () => {
         window.syncStudentProgressToServer({ gdCount: newCount });
       }
 
-      clearInterval(gdTimerInterval);
-      gdTimeLeft = 120;
-      gdTimerRing.innerText = "02:00";
-      gdTimerRing.classList.remove('active');
-      btnGdTimer.innerText = "Start Timer";
+      resetGdTimer();
+      showGdToast("New random topic generated!");
     });
   }
 
+  // Timer rendering and calculations
+  function updateTimerCircle(timeLeft, timeTotal) {
+    if (!gdTimerCircle) return;
+    const progressFraction = timeLeft / timeTotal;
+    const offset = GD_TIMER_CIRCUMFERENCE * (1 - progressFraction);
+    gdTimerCircle.style.strokeDashoffset = offset;
+
+    // Apply color thresholds
+    gdTimerCircle.classList.remove('warning', 'danger');
+    if (gdTimerRing) gdTimerRing.classList.remove('danger');
+
+    if (timeLeft <= timeTotal * 0.25) {
+      gdTimerCircle.classList.add('danger');
+      if (gdTimerRing) gdTimerRing.classList.add('danger');
+    } else if (timeLeft <= timeTotal * 0.5) {
+      gdTimerCircle.classList.add('warning');
+    }
+  }
+
+  function formatTimerText(seconds) {
+    let minutes = Math.floor(seconds / 60);
+    let remSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remSeconds.toString().padStart(2, '0')}`;
+  }
+
+  function resetGdTimer() {
+    clearInterval(gdTimerInterval);
+    gdTimerInterval = null;
+    gdTimeLeft = gdTimeTotal;
+    if (gdTimerRing) gdTimerRing.innerText = formatTimerText(gdTimeLeft);
+    if (btnGdTimerText) btnGdTimerText.innerText = "Start Timer";
+    if (btnGdTimerIcon) {
+      btnGdTimerIcon.className = "fa-solid fa-play";
+    }
+    updateTimerCircle(gdTimeLeft, gdTimeTotal);
+  }
+
+  // Timer Play/Pause toggle
   if (btnGdTimer) {
     btnGdTimer.addEventListener('click', () => {
       if (gdTimerInterval) {
+        // Pause state
         clearInterval(gdTimerInterval);
         gdTimerInterval = null;
-        gdTimerRing.classList.remove('active');
-        btnGdTimer.innerText = "Resume Timer";
+        if (btnGdTimerText) btnGdTimerText.innerText = "Resume Timer";
+        if (btnGdTimerIcon) btnGdTimerIcon.className = "fa-solid fa-play";
       } else {
-        gdTimerRing.classList.add('active');
-        btnGdTimer.innerText = "Pause Timer";
+        // Start state
+        if (btnGdTimerText) btnGdTimerText.innerText = "Pause Timer";
+        if (btnGdTimerIcon) btnGdTimerIcon.className = "fa-solid fa-pause";
+        
         gdTimerInterval = setInterval(() => {
           gdTimeLeft--;
-          let minutes = Math.floor(gdTimeLeft / 60);
-          let seconds = gdTimeLeft % 60;
-          gdTimerRing.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+          if (gdTimerRing) gdTimerRing.innerText = formatTimerText(gdTimeLeft);
+          updateTimerCircle(gdTimeLeft, gdTimeTotal);
 
           if (gdTimeLeft <= 0) {
             clearInterval(gdTimerInterval);
             gdTimerInterval = null;
-            gdTimerRing.classList.remove('active');
-            btnGdTimer.innerText = "Start Timer";
-            alert("GD prep time completed! Ready to summarize?");
+            if (btnGdTimerText) btnGdTimerText.innerText = "Start Timer";
+            if (btnGdTimerIcon) btnGdTimerIcon.className = "fa-solid fa-play";
+            playBeepTone();
+            showGdToast("GD prep time completed! Ready to summarize?", true);
           }
         }, 1000);
       }
     });
   }
 
+  // Duration Presets Event Handlers
+  const presetButtons = document.querySelectorAll('#gd-duration-presets .preset-btn');
+  presetButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      presetButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      gdTimeTotal = parseInt(btn.getAttribute('data-time'));
+      resetGdTimer();
+    });
+  });
+
+  // Notepad Stats calculator (Word & Character count)
+  if (gdNotepadDraft) {
+    gdNotepadDraft.addEventListener('input', () => {
+      const text = gdNotepadDraft.value;
+      const charCount = text.length;
+      const wordCount = text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
+      
+      if (gdWordCount) gdWordCount.innerText = wordCount;
+      if (gdCharCount) gdCharCount.innerText = charCount;
+    });
+  }
+
+  // Notepad Clear Button
+  if (btnNotepadClear) {
+    btnNotepadClear.addEventListener('click', () => {
+      if (!gdNotepadDraft.value.trim()) return;
+      if (confirm("Are you sure you want to clear your current scratchpad notes?")) {
+        gdNotepadDraft.value = "";
+        if (gdWordCount) gdWordCount.innerText = "0";
+        if (gdCharCount) gdCharCount.innerText = "0";
+        showGdToast("Scratchpad cleared.");
+      }
+    });
+  }
+
+  // Notepad Copy Button with feedback
+  if (btnNotepadCopy) {
+    btnNotepadCopy.addEventListener('click', () => {
+      const text = gdNotepadDraft.value.trim();
+      if (!text) {
+        showGdToast("Your draft is empty. Write something first!", true);
+        return;
+      }
+      navigator.clipboard.writeText(text).then(() => {
+        btnNotepadCopy.classList.add('success-feedback');
+        btnNotepadCopy.innerHTML = `<i class="fa-solid fa-check"></i>Copied!`;
+        showGdToast("Draft copied to clipboard.");
+        setTimeout(() => {
+          btnNotepadCopy.classList.remove('success-feedback');
+          btnNotepadCopy.innerHTML = `<i class="fa-solid fa-copy"></i>Copy Draft`;
+        }, 1500);
+      });
+    });
+  }
+
+  // Notepad Download Button
+  if (btnNotepadDownload) {
+    btnNotepadDownload.addEventListener('click', () => {
+      const text = gdNotepadDraft.value.trim();
+      if (!text) {
+        showGdToast("Draft notepad is empty. Nothing to download.", true);
+        return;
+      }
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `LitCrack_GD_Draft_Notes.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showGdToast("Downloaded draft notepad as a .txt file!");
+    });
+  }
+
+  // Load Phrasing Booster Templates Dynamically with Copy + Insert actions
   const gdTemplatesContainer = document.getElementById('gd-templates-container');
   if (gdTemplatesContainer) {
-    gdTemplatesContainer.innerHTML = GD_TEMPLATES.map(t => `
-      <div>
-        <strong>${t.title}</strong>
-        <p class="template-box">${t.text}</p>
+    gdTemplatesContainer.innerHTML = GD_TEMPLATES.map((t, idx) => `
+      <div class="template-booster-item">
+        <div class="template-booster-content" data-idx="${idx}" title="Click to copy">
+          <div class="template-booster-title">${t.title}</div>
+          <div class="template-booster-text">${t.text}</div>
+        </div>
+        <div class="template-booster-actions">
+          <button class="btn-template-action btn-template-copy" title="Copy phrasing text" data-idx="${idx}">
+            <i class="fa-solid fa-copy" id="booster-copy-icon-${idx}"></i>
+          </button>
+          <button class="btn-template-action btn-template-insert" title="Insert into Scratchpad" data-idx="${idx}">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
       </div>
     `).join('');
+
+    // Attach click events on templates for Copy Action
+    document.querySelectorAll('.template-booster-content, .btn-template-copy').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = el.getAttribute('data-idx');
+        const textToCopy = GD_TEMPLATES[idx].text;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          showGdToast(`Copied phrasing template to clipboard.`);
+          const copyBtn = document.getElementById(`booster-copy-icon-${idx}`);
+          if (copyBtn) {
+            copyBtn.className = "fa-solid fa-check success-feedback";
+            setTimeout(() => {
+              copyBtn.className = "fa-solid fa-copy";
+            }, 1500);
+          }
+        });
+      });
+    });
+
+    // Attach click events on templates for Insert Action
+    document.querySelectorAll('.btn-template-insert').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = btn.getAttribute('data-idx');
+        const textToInsert = GD_TEMPLATES[idx].text;
+        
+        if (!gdNotepadDraft) return;
+        
+        // Find cursor location or append
+        const startPos = gdNotepadDraft.selectionStart;
+        const endPos = gdNotepadDraft.selectionEnd;
+        const existingText = gdNotepadDraft.value;
+        
+        gdNotepadDraft.value = existingText.substring(0, startPos) + textToInsert + existingText.substring(endPos, existingText.length);
+        
+        // Focus and place cursor right after inserted text
+        gdNotepadDraft.focus();
+        gdNotepadDraft.selectionStart = startPos + textToInsert.length;
+        gdNotepadDraft.selectionEnd = startPos + textToInsert.length;
+        
+        // Trigger word/char counter manually
+        gdNotepadDraft.dispatchEvent(new Event('input'));
+        
+        showGdToast("Inserted template phrasing into draft notes!");
+      });
+    });
   }
+
+  // Interactive Scoring Rubrics scorecard
+  function updateGdScorecard() {
+    if (!slideRubricInit || !slideRubricListen || !slideRubricStructure || !slideRubricVocab) return;
+
+    const valInit = parseInt(slideRubricInit.value);
+    const valListen = parseInt(slideRubricListen.value);
+    const valStructure = parseInt(slideRubricStructure.value);
+    const valVocab = parseInt(slideRubricVocab.value);
+
+    // Update Slider text elements
+    if (valRubricInit) valRubricInit.innerText = `${valInit} / 5`;
+    if (valRubricListen) valRubricListen.innerText = `${valListen} / 5`;
+    if (valRubricStructure) valRubricStructure.innerText = `${valStructure} / 5`;
+    if (valRubricVocab) valRubricVocab.innerText = `${valVocab} / 5`;
+
+    // Calculate sum
+    const totalScore = valInit + valListen + valStructure + valVocab;
+    if (gdTotalScoreVal) gdTotalScoreVal.innerText = totalScore;
+
+    // Set Grade Badge and styling classes
+    if (gdGradeBadge) {
+      gdGradeBadge.classList.remove('elite', 'competent', 'practicing');
+      if (totalScore >= 17) {
+        gdGradeBadge.innerText = "Elite Speaker";
+        gdGradeBadge.classList.add('elite');
+      } else if (totalScore >= 12) {
+        gdGradeBadge.innerText = "Highly Competent";
+        gdGradeBadge.classList.add('competent');
+      } else {
+        gdGradeBadge.innerText = "Practicing";
+        gdGradeBadge.classList.add('practicing');
+      }
+    }
+  }
+
+  // Scorecard Event Listeners
+  const sliders = [slideRubricInit, slideRubricListen, slideRubricStructure, slideRubricVocab];
+  sliders.forEach(slider => {
+    if (slider) {
+      slider.addEventListener('input', updateGdScorecard);
+    }
+  });
+
+  // Scorecard Reset button
+  if (btnRubricsReset) {
+    btnRubricsReset.addEventListener('click', () => {
+      sliders.forEach(slider => {
+        if (slider) slider.value = 0;
+      });
+      updateGdScorecard();
+      showGdToast("Performance scorecard reset.");
+    });
+  }
+
+  // Initialize scorecard on startup
+  updateGdScorecard();
 
   // ==========================================================================
   // STAR METHOD BUILDER
