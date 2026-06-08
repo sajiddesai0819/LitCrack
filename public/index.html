@@ -479,8 +479,16 @@
 
           <div class="grid-main">
             <div class="glass-card">
-              <div class="form-group">
-                <label for="star-question-selector">Select Behavioral Prompt</label>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+                <h3 style="margin-bottom: 0; font-family: var(--font-display);"><i class="fa-solid fa-graduation-cap" style="color: var(--primary); margin-right: 0.5rem;"></i>Behavioral Prompt</h3>
+                <div class="gd-mode-toggle">
+                  <button class="gd-mode-btn active" id="btn-star-mode-select">Standard Prompts</button>
+                  <button class="gd-mode-btn" id="btn-star-mode-custom">Custom Question</button>
+                </div>
+              </div>
+
+              <!-- Standard Select -->
+              <div class="form-group" id="star-select-container">
                 <select id="star-question-selector" class="form-control">
                   <option value="Describe a time you solved a complex technical bug under a tight deadline.">Describe a time you solved a complex technical bug under a tight deadline.</option>
                   <option value="Tell me about a time you had a conflict with a team member in a project. How did you resolve it?">Tell me about a time you had a conflict with a team member in a project. How did you resolve it?</option>
@@ -489,57 +497,101 @@
                 </select>
               </div>
 
-              <div class="form-group">
+              <!-- Custom Textarea -->
+              <div class="form-group" id="star-custom-prompt-container" style="display: none;">
+                <textarea id="star-custom-question-input" class="form-control" placeholder="Type or paste the company's behavioral question here..." rows="2" style="font-size: 0.9rem; resize: none;"></textarea>
+              </div>
+
+              <!-- Situation -->
+              <div class="form-group" style="margin-bottom: 0.75rem;">
                 <label for="star-situation"><strong>S</strong>ituation (Set the context, keep it short)</label>
-                <textarea id="star-situation" class="form-control" placeholder="Example: During my final year capstone project, our backend server collapsed 3 days before submission..."></textarea>
+                <textarea id="star-situation" class="form-control" placeholder="Example: During my final year capstone project, our backend server collapsed 3 days before submission..." rows="3"></textarea>
+                <div class="star-length-guide">
+                  <span>Words: <strong id="star-words-s">0</strong> / 100</span>
+                  <div class="star-length-track"><div class="star-length-fill" id="fill-star-s"></div></div>
+                  <span class="star-length-tag" id="tag-star-s">Too Short</span>
+                </div>
               </div>
 
-              <div class="form-group">
+              <!-- Task -->
+              <div class="form-group" style="margin-bottom: 0.75rem;">
                 <label for="star-task"><strong>T</strong>ask (What was your specific responsibility?)</label>
-                <textarea id="star-task" class="form-control" placeholder="Example: My task was to identify the memory leak and rebuild the database indexing..."></textarea>
+                <textarea id="star-task" class="form-control" placeholder="Example: My task was to identify the memory leak and rebuild the database indexing..." rows="3"></textarea>
+                <div class="star-length-guide">
+                  <span>Words: <strong id="star-words-t">0</strong> / 80</span>
+                  <div class="star-length-track"><div class="star-length-fill" id="fill-star-t"></div></div>
+                  <span class="star-length-tag" id="tag-star-t">Too Short</span>
+                </div>
               </div>
 
-              <div class="form-group">
+              <!-- Action -->
+              <div class="form-group" style="margin-bottom: 0.75rem;">
                 <label for="star-action"><strong>A</strong>ction (What did you do? Focus on your coding or leadership)</label>
-                <textarea id="star-action" class="form-control" placeholder="Example: I profiled the Node.js threads, added middleware for request validation, and..."></textarea>
+                <textarea id="star-action" class="form-control" placeholder="Example: I profiled the Node.js threads, added middleware for request validation, and..." rows="4"></textarea>
+                <div class="star-length-guide">
+                  <span>Words: <strong id="star-words-a">0</strong> / 250</span>
+                  <div class="star-length-track"><div class="star-length-fill" id="fill-star-a"></div></div>
+                  <span class="star-length-tag" id="tag-star-a">Too Short</span>
+                </div>
               </div>
 
-              <div class="form-group">
+              <!-- Result -->
+              <div class="form-group" style="margin-bottom: 0.75rem;">
                 <label for="star-result"><strong>R</strong>esult (Metrics! What did you achieve/learn?)</label>
-                <textarea id="star-result" class="form-control" placeholder="Example: Server latency dropped by 45%, database queries stabilized, and we scored an A grade..."></textarea>
+                <textarea id="star-result" class="form-control" placeholder="Example: Server latency dropped by 45%, database queries stabilized, and we scored an A grade..." rows="3"></textarea>
+                <div class="star-length-guide">
+                  <span>Words: <strong id="star-words-r">0</strong> / 150</span>
+                  <div class="star-length-track"><div class="star-length-fill" id="fill-star-r"></div></div>
+                  <span class="star-length-tag" id="tag-star-r">Too Short</span>
+                </div>
               </div>
 
-              <button class="btn btn-primary" id="btn-save-star">Save Answer Card</button>
+              <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
+                <button class="btn btn-primary" id="btn-save-star" style="flex-grow: 1;"><i class="fa-solid fa-floppy-disk" style="margin-right: 0.25rem;"></i>Save Answer Card</button>
+                <button class="btn btn-outline" id="btn-clear-star"><i class="fa-solid fa-trash-can" style="margin-right: 0.25rem;"></i>Clear Fields</button>
+              </div>
             </div>
 
             <div>
               <div class="glass-card glow-indigo" style="position: sticky; top: 90px;">
-                <h3 style="margin-bottom: 1rem;">Live Preview Card</h3>
+                <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-eye" style="color: var(--primary); margin-right: 0.5rem;"></i>Live Preview Card</h3>
                 <div class="star-preview-card" id="star-live-preview">
-                  <div class="star-preview-section">
+                  <div class="star-preview-section" id="preview-section-s">
                     <strong><span class="star-letter">S</span> Situation</strong>
                     <p style="font-size: 0.85rem; color: var(--text-muted);" id="preview-s">Type in the situation input field...</p>
                   </div>
-                  <div class="star-preview-section">
+                  <div class="star-preview-section" id="preview-section-t">
                     <strong><span class="star-letter" style="background: var(--secondary);">T</span> Task</strong>
                     <p style="font-size: 0.85rem; color: var(--text-muted);" id="preview-t">Type in the task input field...</p>
                   </div>
-                  <div class="star-preview-section">
+                  <div class="star-preview-section" id="preview-section-a">
                     <strong><span class="star-letter" style="background: var(--success);">A</span> Action</strong>
                     <p style="font-size: 0.85rem; color: var(--text-muted);" id="preview-a">Type in the action input field...</p>
                   </div>
-                  <div class="star-preview-section">
+                  <div class="star-preview-section" id="preview-section-r">
                     <strong><span class="star-letter" style="background: var(--warning);">R</span> Result</strong>
                     <p style="font-size: 0.85rem; color: var(--text-muted);" id="preview-r">Type in the result input field...</p>
                   </div>
                 </div>
 
-                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-                  <button class="btn btn-outline" id="btn-export-star" style="width: 100%;">
-                    <i class="fa-solid fa-copy"></i> Copy Text
+                <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap;">
+                  <button class="btn btn-outline" id="btn-export-star" style="flex: 1; padding: 0.65rem 1rem; font-size: 0.85rem;">
+                    <i class="fa-solid fa-copy" style="margin-right: 0.25rem;"></i> Copy Text
+                  </button>
+                  <button class="btn btn-outline" id="btn-download-star" style="flex: 1; padding: 0.65rem 1rem; font-size: 0.85rem;">
+                    <i class="fa-solid fa-download" style="margin-right: 0.25rem;"></i> Download MD
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Saved STAR Cards History Library -->
+          <div class="saved-star-library-container">
+            <h3 style="font-family: var(--font-display); margin-bottom: 0.25rem;"><i class="fa-solid fa-folder-open" style="color: var(--primary); margin-right: 0.5rem;"></i>Your Saved Answer Library</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Access, load, download, or edit your saved interview answers.</p>
+            <div id="saved-star-library-list" class="saved-star-grid">
+              <!-- Loaded dynamically in JS -->
             </div>
           </div>
         </section>

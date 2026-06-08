@@ -3,6 +3,27 @@
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
+  // In-app Toast Notification System
+  window.showAppToast = function(message, isWarning = false) {
+    const existing = document.querySelectorAll('.gd-toast-notify');
+    existing.forEach(t => t.remove());
+
+    const toast = document.createElement('div');
+    toast.className = 'gd-toast-notify' + (isWarning ? ' timer-finished' : '');
+    toast.innerHTML = `
+      <i class="fa-solid ${isWarning ? 'fa-bell fa-bounce' : 'fa-circle-check'}" style="color: ${isWarning ? 'var(--danger)' : 'var(--secondary)'}; font-size: 1.1rem;"></i>
+      <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add('out-anim');
+      setTimeout(() => toast.remove(), 400);
+    }, 3500);
+  };
+
+  const showGdToast = window.showAppToast;
+
   // Navigation elements
   const menuItems = document.querySelectorAll('.sidebar-menu .menu-item');
   const pageViews = document.querySelectorAll('.page-view');
@@ -223,32 +244,66 @@ document.addEventListener('DOMContentLoaded', () => {
   // Sync STAR inputs from LocalStorage
   function syncStarCardInputsFromLocalStorage() {
     const savedStar = JSON.parse(localStorage.getItem('litcrack_star_saved') || 'null');
-    if (savedStar) {
-      if (typeof starQuestion !== 'undefined' && starQuestion) {
-        starQuestion.value = savedStar.question || (starQuestion.options[0] ? starQuestion.options[0].value : '');
+    
+    // Parse library list
+    let library = [];
+    try {
+      library = JSON.parse(localStorage.getItem('litcrack_star_saved_library') || '[]');
+    } catch (e) {
+      library = [];
+    }
+
+    // Migration and alignment logic
+    if (Array.isArray(savedStar)) {
+      library = savedStar;
+      localStorage.setItem('litcrack_star_saved_library', JSON.stringify(library));
+      localStorage.removeItem('litcrack_star_saved');
+    } else if (savedStar && savedStar.library && Array.isArray(savedStar.library)) {
+      library = savedStar.library;
+      localStorage.setItem('litcrack_star_saved_library', JSON.stringify(library));
+      if (savedStar.activeDraft) {
+        localStorage.setItem('litcrack_star_saved', JSON.stringify(savedStar.activeDraft));
+      }
+    }
+
+    // Populating inputs from active draft
+    const draft = JSON.parse(localStorage.getItem('litcrack_star_saved') || 'null');
+    const starQuestionSel = document.getElementById('star-question-selector');
+    const starCustomQuestionIn = document.getElementById('star-custom-question-input');
+    const btnStarModeSel = document.getElementById('btn-star-mode-select');
+    const btnStarModeCust = document.getElementById('btn-star-mode-custom');
+    
+    if (draft) {
+      if (starQuestionSel) {
+        if (draft.isCustom) {
+          if (btnStarModeCust) btnStarModeCust.click();
+          if (starCustomQuestionIn) starCustomQuestionIn.value = draft.question || '';
+        } else {
+          if (btnStarModeSel) btnStarModeSel.click();
+          starQuestionSel.value = draft.question || '';
+        }
       }
       if (typeof starInputs !== 'undefined') {
-        if (starInputs.situation) starInputs.situation.value = savedStar.situation || '';
-        if (starInputs.task) starInputs.task.value = savedStar.task || '';
-        if (starInputs.action) starInputs.action.value = savedStar.action || '';
-        if (starInputs.result) starInputs.result.value = savedStar.result || '';
-      }
-      if (typeof updateStarPreview === 'function') {
-        updateStarPreview();
+        if (starInputs.situation) starInputs.situation.value = draft.situation || '';
+        if (starInputs.task) starInputs.task.value = draft.task || '';
+        if (starInputs.action) starInputs.action.value = draft.action || '';
+        if (starInputs.result) starInputs.result.value = draft.result || '';
       }
     } else {
-      if (typeof starQuestion !== 'undefined' && starQuestion) {
-        starQuestion.selectedIndex = 0;
-      }
-      if (typeof starInputs !== 'undefined') {
-        if (starInputs.situation) starInputs.situation.value = '';
-        if (starInputs.task) starInputs.task.value = '';
-        if (starInputs.action) starInputs.action.value = '';
-        if (starInputs.result) starInputs.result.value = '';
-      }
-      if (typeof updateStarPreview === 'function') {
-        updateStarPreview();
-      }
+      if (starInputs.situation) starInputs.situation.value = '';
+      if (starInputs.task) starInputs.task.value = '';
+      if (starInputs.action) starInputs.action.value = '';
+      if (starInputs.result) starInputs.result.value = '';
+    }
+
+    if (typeof updateStarPreview === 'function') {
+      updateStarPreview();
+    }
+    if (typeof updateAllLengthGuides === 'function') {
+      updateAllLengthGuides();
+    }
+    if (typeof renderStarLibrary === 'function') {
+      renderStarLibrary();
     }
   }
 
@@ -1304,24 +1359,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let gdTimeLeft = 120;
   const GD_TIMER_CIRCUMFERENCE = 339.292; // 2 * PI * 54
 
-  // In-app Toast Notification System
-  function showGdToast(message, isWarning = false) {
-    const existing = document.querySelectorAll('.gd-toast-notify');
-    existing.forEach(t => t.remove());
 
-    const toast = document.createElement('div');
-    toast.className = 'gd-toast-notify' + (isWarning ? ' timer-finished' : '');
-    toast.innerHTML = `
-      <i class="fa-solid ${isWarning ? 'fa-bell fa-bounce' : 'fa-circle-check'}" style="color: ${isWarning ? 'var(--danger)' : 'var(--secondary)'}; font-size: 1.1rem;"></i>
-      <span>${message}</span>
-    `;
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-      toast.classList.add('out-anim');
-      setTimeout(() => toast.remove(), 400);
-    }, 3500);
-  }
 
   // Play synthetic tone on timeout (using AudioContext)
   function playBeepTone() {
@@ -1703,8 +1741,117 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const starQuestion = document.getElementById('star-question-selector');
   const btnSaveStar = document.getElementById('btn-save-star');
+  const btnClearStar = document.getElementById('btn-clear-star');
   const btnExportStar = document.getElementById('btn-export-star');
+  const btnDownloadStar = document.getElementById('btn-download-star');
+  const savedStarLibraryList = document.getElementById('saved-star-library-list');
 
+  // Custom vs Standard mode controls
+  const btnStarModeSelect = document.getElementById('btn-star-mode-select');
+  const btnStarModeCustom = document.getElementById('btn-star-mode-custom');
+  const starSelectContainer = document.getElementById('star-select-container');
+  const starCustomPromptContainer = document.getElementById('star-custom-prompt-container');
+  const starCustomQuestionInput = document.getElementById('star-custom-question-input');
+
+  let isCustomQuestion = false;
+
+  // Length limits constants
+  const STAR_LIMITS = {
+    situation: { min: 40, max: 100 },
+    task: { min: 30, max: 80 },
+    action: { min: 100, max: 250 },
+    result: { min: 60, max: 150 }
+  };
+
+  // Toggle prompt mode
+  if (btnStarModeSelect && btnStarModeCustom) {
+    btnStarModeSelect.addEventListener('click', () => {
+      btnStarModeSelect.classList.add('active');
+      btnStarModeCustom.classList.remove('active');
+      if (starSelectContainer) starSelectContainer.style.display = 'block';
+      if (starCustomPromptContainer) starCustomPromptContainer.style.display = 'none';
+      isCustomQuestion = false;
+      saveActiveStarDraft();
+    });
+
+    btnStarModeCustom.addEventListener('click', () => {
+      btnStarModeCustom.classList.add('active');
+      btnStarModeSelect.classList.remove('active');
+      if (starSelectContainer) starSelectContainer.style.display = 'none';
+      if (starCustomPromptContainer) starCustomPromptContainer.style.display = 'block';
+      isCustomQuestion = true;
+      saveActiveStarDraft();
+    });
+  }
+
+  if (starCustomQuestionInput) {
+    starCustomQuestionInput.addEventListener('input', () => {
+      saveActiveStarDraft();
+    });
+  }
+  if (starQuestion) {
+    starQuestion.addEventListener('change', () => {
+      saveActiveStarDraft();
+    });
+  }
+
+  // Active Highlight Handlers
+  Object.keys(starInputs).forEach(key => {
+    const textarea = starInputs[key];
+    const previewBox = document.getElementById(`preview-section-${key[0]}`);
+    if (textarea && previewBox) {
+      textarea.addEventListener('focus', () => {
+        previewBox.classList.add('active-edit');
+      });
+      textarea.addEventListener('blur', () => {
+        previewBox.classList.remove('active-edit');
+      });
+    }
+  });
+
+  // Length Guide updater
+  function updateLengthGuide(section, text, optimalMin, optimalMax) {
+    const words = text.trim() === "" ? 0 : text.trim().split(/\s+/).filter(Boolean).length;
+    const bar = document.getElementById(`fill-star-${section[0]}`);
+    const textVal = document.getElementById(`star-words-${section[0]}`);
+    const tag = document.getElementById(`tag-star-${section[0]}`);
+    
+    if (textVal) textVal.innerText = words;
+    
+    if (bar && tag) {
+      let pct = Math.min(Math.round((words / optimalMax) * 100), 100);
+      bar.style.width = `${pct}%`;
+      
+      bar.classList.remove('optimal', 'verbose');
+      tag.classList.remove('optimal', 'verbose');
+      
+      if (words === 0) {
+        tag.innerText = "Too Short";
+        bar.style.width = "0%";
+      } else if (words < optimalMin) {
+        tag.innerText = "Too Short";
+      } else if (words <= optimalMax) {
+        tag.innerText = "Optimal";
+        bar.classList.add('optimal');
+        tag.classList.add('optimal');
+      } else {
+        tag.innerText = "Too Verbose";
+        bar.classList.add('verbose');
+        tag.classList.add('verbose');
+      }
+    }
+  }
+
+  function updateAllLengthGuides() {
+    Object.keys(starInputs).forEach(key => {
+      if (starInputs[key]) {
+        const limits = STAR_LIMITS[key];
+        updateLengthGuide(key, starInputs[key].value, limits.min, limits.max);
+      }
+    });
+  }
+
+  // Preview builder
   function updateStarPreview() {
     if (starInputs.situation) starPreviews.s.innerText = starInputs.situation.value || "Type in the situation input field...";
     if (starInputs.task) starPreviews.t.innerText = starInputs.task.value || "Type in the task input field...";
@@ -1712,43 +1859,299 @@ document.addEventListener('DOMContentLoaded', () => {
     if (starInputs.result) starPreviews.r.innerText = starInputs.result.value || "Type in the result input field...";
   }
 
+  // Save current active draft locally
+  function saveActiveStarDraft() {
+    const draft = {
+      isCustom: isCustomQuestion,
+      question: isCustomQuestion ? (starCustomQuestionInput ? starCustomQuestionInput.value : "") : (starQuestion ? starQuestion.value : ""),
+      situation: starInputs.situation ? starInputs.situation.value : "",
+      task: starInputs.task ? starInputs.task.value : "",
+      action: starInputs.action ? starInputs.action.value : "",
+      result: starInputs.result ? starInputs.result.value : ""
+    };
+    localStorage.setItem('litcrack_star_saved', JSON.stringify(draft));
+  }
+
   Object.keys(starInputs).forEach(key => {
     if (starInputs[key]) {
-      starInputs[key].addEventListener('input', updateStarPreview);
+      starInputs[key].addEventListener('input', () => {
+        updateStarPreview();
+        const limits = STAR_LIMITS[key];
+        updateLengthGuide(key, starInputs[key].value, limits.min, limits.max);
+        saveActiveStarDraft();
+      });
     }
   });
 
+  // Get active compiled STAR card text format
+  function getCompiledStarText() {
+    const q = isCustomQuestion ? (starCustomQuestionInput ? starCustomQuestionInput.value.trim() : "") : (starQuestion ? starQuestion.value : "");
+    return `STAR ANSWER CARD\n================================\nQuestion: ${q}\n\n[S] Situation:\n${starInputs.situation.value}\n\n[T] Task:\n${starInputs.task.value}\n\n[A] Action:\n${starInputs.action.value}\n\n[R] Result:\n${starInputs.result.value}`;
+  }
+
+  // Get active compiled STAR card Markdown format
+  function getCompiledStarMarkdown() {
+    const q = isCustomQuestion ? (starCustomQuestionInput ? starCustomQuestionInput.value.trim() : "") : (starQuestion ? starQuestion.value : "");
+    return `# STAR Interview Prep Card\n\n**Question:** ${q}\n\n---\n\n### 🚀 [S] Situation\n${starInputs.situation.value}\n\n### 🎯 [T] Task\n${starInputs.task.value}\n\n### 🛠️ [A] Action\n${starInputs.action.value}\n\n### 🏆 [R] Result\n${starInputs.result.value}\n\n*Created on LitCrack Placement Hub - ${new Date().toLocaleDateString()}*`;
+  }
+
+  // Copy card text
+  if (btnExportStar) {
+    btnExportStar.addEventListener('click', () => {
+      const q = isCustomQuestion ? (starCustomQuestionInput ? starCustomQuestionInput.value.trim() : "") : (starQuestion ? starQuestion.value : "");
+      if (!q || !starInputs.situation.value.trim()) {
+        window.showAppToast("Draft card is empty. Please enter your answers first.", true);
+        return;
+      }
+      navigator.clipboard.writeText(getCompiledStarText()).then(() => {
+        window.showAppToast("STAR Card text copied to clipboard!");
+      });
+    });
+  }
+
+  // Download Markdown file
+  if (btnDownloadStar) {
+    btnDownloadStar.addEventListener('click', () => {
+      const q = isCustomQuestion ? (starCustomQuestionInput ? starCustomQuestionInput.value.trim() : "") : (starQuestion ? starQuestion.value : "");
+      if (!q || !starInputs.situation.value.trim()) {
+        window.showAppToast("Draft card is empty. Nothing to download.", true);
+        return;
+      }
+      const blob = new Blob([getCompiledStarMarkdown()], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `STAR_Prep_${q.slice(0, 25).replace(/[^a-zA-Z0-9]/g, '_')}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      window.showAppToast("Downloaded STAR Card as a markdown file!");
+    });
+  }
+
+  // Save Card to Library
   if (btnSaveStar) {
     btnSaveStar.addEventListener('click', () => {
-      const compiled = {
-        question: starQuestion.value,
+      const q = isCustomQuestion ? (starCustomQuestionInput ? starCustomQuestionInput.value.trim() : "") : (starQuestion ? starQuestion.value : "");
+      if (!q || !starInputs.situation.value.trim() || !starInputs.action.value.trim()) {
+        window.showAppToast("Please fill in the Question, Situation, and Action before saving.", true);
+        return;
+      }
+
+      const card = {
+        id: Date.now(),
+        isCustom: isCustomQuestion,
+        question: q,
         situation: starInputs.situation.value,
         task: starInputs.task.value,
         action: starInputs.action.value,
         result: starInputs.result.value,
         timestamp: new Date().toLocaleDateString()
       };
-      
-      localStorage.setItem('litcrack_star_saved', JSON.stringify(compiled));
-      alert("STAR Answer Card successfully saved locally!");
 
+      let library = [];
+      try {
+        library = JSON.parse(localStorage.getItem('litcrack_star_saved_library') || '[]');
+      } catch (e) {
+        library = [];
+      }
+
+      // Check if updating an existing loaded card (we can store the loaded ID)
+      const loadedId = localStorage.getItem('litcrack_star_loaded_id');
+      if (loadedId) {
+        const idx = library.findIndex(c => c.id == loadedId);
+        if (idx !== -1) {
+          card.id = parseInt(loadedId); // Maintain same ID
+          library[idx] = card;
+          window.showAppToast("STAR Answer Card updated in your library!");
+        } else {
+          library.unshift(card);
+          window.showAppToast("STAR Answer Card saved to your library!");
+        }
+        localStorage.removeItem('litcrack_star_loaded_id');
+      } else {
+        library.unshift(card);
+        window.showAppToast("STAR Answer Card saved to your library!");
+      }
+
+      localStorage.setItem('litcrack_star_saved_library', JSON.stringify(library));
+      
+      // Update saved card to match current state
+      saveActiveStarDraft();
+
+      // Sync overall library state to server
       if (currentUser && currentUser.role === 'student') {
-        window.syncStudentProgressToServer({ starAnswers: compiled });
+        window.syncStudentProgressToServer({ starAnswers: library });
+      }
+
+      renderStarLibrary();
+    });
+  }
+
+  // Clear Editor fields
+  if (btnClearStar) {
+    btnClearStar.addEventListener('click', () => {
+      if (confirm("Are you sure you want to clear the active editor fields? Current unsaved draft progress will be wiped.")) {
+        localStorage.removeItem('litcrack_star_saved');
+        localStorage.removeItem('litcrack_star_loaded_id');
+        if (starInputs.situation) starInputs.situation.value = "";
+        if (starInputs.task) starInputs.task.value = "";
+        if (starInputs.action) starInputs.action.value = "";
+        if (starInputs.result) starInputs.result.value = "";
+        if (starCustomQuestionInput) starCustomQuestionInput.value = "";
+        
+        updateStarPreview();
+        updateAllLengthGuides();
+        window.showAppToast("Editor fields cleared.");
       }
     });
   }
 
-  if (btnExportStar) {
-    btnExportStar.addEventListener('click', () => {
-      const text = `STAR ANSWER CARD\nQuestion: ${starQuestion.value}\n\n[S] Situation:\n${starInputs.situation.value}\n\n[T] Task:\n${starInputs.task.value}\n\n[A] Action:\n${starInputs.action.value}\n\n[R] Result:\n${starInputs.result.value}`;
-      navigator.clipboard.writeText(text).then(() => {
-        alert("STAR Card text copied to clipboard!");
-      }).catch(err => {
-        console.error("Failed to copy card", err);
+  // Render library cards list
+  function renderStarLibrary() {
+    if (!savedStarLibraryList) return;
+
+    let library = [];
+    try {
+      library = JSON.parse(localStorage.getItem('litcrack_star_saved_library') || '[]');
+    } catch(e) {
+      library = [];
+    }
+
+    if (library.length === 0) {
+      savedStarLibraryList.innerHTML = `
+        <div class="star-empty-library-msg">
+          <i class="fa-solid fa-folder-open" style="font-size: 2rem; display: block; margin-bottom: 0.75rem; color: var(--text-muted);"></i>
+          Your Saved Cards library is currently empty. Write your STAR answers and click "Save Answer Card" to start building your personal interview portfolio!
+        </div>
+      `;
+      return;
+    }
+
+    savedStarLibraryList.innerHTML = library.map((card, idx) => {
+      const previewText = card.situation ? card.situation.substring(0, 100) + "..." : "No preview text.";
+      return `
+        <div class="saved-star-card">
+          <div>
+            <div class="saved-star-header">
+              <div class="saved-star-title">${card.question}</div>
+              <div class="saved-star-date">${card.timestamp}</div>
+            </div>
+            <div class="saved-star-preview-snippet">${previewText}</div>
+          </div>
+          <div class="saved-star-actions">
+            <button class="btn-star-card-action btn-star-load" data-id="${card.id}">
+              <i class="fa-solid fa-pencil" style="margin-right: 0.25rem;"></i> Load Card
+            </button>
+            <div class="saved-star-btn-group">
+              <button class="btn-star-card-action btn-star-copy-lib" title="Copy Card text" data-idx="${idx}">
+                <i class="fa-solid fa-copy" id="lib-copy-icon-${idx}"></i>
+              </button>
+              <button class="btn-star-card-action btn-star-download-lib" title="Download Card" data-idx="${idx}">
+                <i class="fa-solid fa-download"></i>
+              </button>
+              <button class="btn-star-card-action btn-star-delete" title="Delete Card" data-id="${card.id}">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Load action handlers
+    document.querySelectorAll('.btn-star-load').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const card = library.find(c => c.id == id);
+        if (card) {
+          localStorage.setItem('litcrack_star_loaded_id', id);
+          if (card.isCustom) {
+            if (btnStarModeCustom) btnStarModeCustom.click();
+            if (starCustomQuestionInput) starCustomQuestionInput.value = card.question || '';
+          } else {
+            if (btnStarModeSelect) btnStarModeSelect.click();
+            if (starQuestion) starQuestion.value = card.question || '';
+          }
+          
+          if (starInputs.situation) starInputs.situation.value = card.situation || '';
+          if (starInputs.task) starInputs.task.value = card.task || '';
+          if (starInputs.action) starInputs.action.value = card.action || '';
+          if (starInputs.result) starInputs.result.value = card.result || '';
+
+          updateStarPreview();
+          updateAllLengthGuides();
+          saveActiveStarDraft();
+          window.showAppToast("Card loaded into editor! Scroll up to review and modify.");
+        }
+      });
+    });
+
+    // Copy action handlers
+    document.querySelectorAll('.btn-star-copy-lib').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = btn.getAttribute('data-idx');
+        const card = library[idx];
+        const textToCopy = `STAR ANSWER CARD\n================================\nQuestion: ${card.question}\n\n[S] Situation:\n${card.situation}\n\n[T] Task:\n${card.task}\n\n[A] Action:\n${card.action}\n\n[R] Result:\n${card.result}`;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          window.showAppToast("Saved STAR card text copied to clipboard!");
+          const copyBtn = document.getElementById(`lib-copy-icon-${idx}`);
+          if (copyBtn) {
+            copyBtn.className = "fa-solid fa-check text-success";
+            setTimeout(() => {
+              copyBtn.className = "fa-solid fa-copy";
+            }, 1500);
+          }
+        });
+      });
+    });
+
+    // Download action handlers
+    document.querySelectorAll('.btn-star-download-lib').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = btn.getAttribute('data-idx');
+        const card = library[idx];
+        const mdText = `# STAR Interview Prep Card\n\n**Question:** ${card.question}\n\n---\n\n### 🚀 [S] Situation\n${card.situation}\n\n### 🎯 [T] Task\n${card.task}\n\n### 🛠️ [A] Action\n${card.action}\n\n### 🏆 [R] Result\n${card.result}\n\n*Created on LitCrack Placement Hub - ${card.timestamp}*`;
+        const blob = new Blob([mdText], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `STAR_Prep_${card.question.slice(0, 25).replace(/[^a-zA-Z0-9]/g, '_')}.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        window.showAppToast("Downloaded STAR Card as a markdown file!");
+      });
+    });
+
+    // Delete action handlers
+    document.querySelectorAll('.btn-star-delete').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (confirm("Are you sure you want to delete this STAR answer card?")) {
+          const id = btn.getAttribute('data-id');
+          library = library.filter(c => c.id != id);
+          localStorage.setItem('litcrack_star_saved_library', JSON.stringify(library));
+          
+          // Clear active editor if we deleted the loaded card
+          const loadedId = localStorage.getItem('litcrack_star_loaded_id');
+          if (loadedId == id) {
+            localStorage.removeItem('litcrack_star_loaded_id');
+          }
+
+          if (currentUser && currentUser.role === 'student') {
+            window.syncStudentProgressToServer({ starAnswers: library });
+          }
+
+          renderStarLibrary();
+          window.showAppToast("Card deleted from your library.");
+        }
       });
     });
   }
 
+  // Initialize STAR scripts
   syncStarCardInputsFromLocalStorage();
 
   // ==========================================================================
