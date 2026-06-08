@@ -268,6 +268,12 @@ document.addEventListener('DOMContentLoaded', () => {
     navName.innerText = currentUser.name;
     navAvatar.innerText = currentUser.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
+    // Dynamic welcome message greeting
+    const welcomeTitle = document.getElementById('dashboard-welcome-title');
+    if (welcomeTitle) {
+      welcomeTitle.innerHTML = `Welcome back, <span style="background: linear-gradient(135deg, var(--primary-bright), var(--accent-rose)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">${currentUser.name}</span>!`;
+    }
+
     // Toggle Sidebar controls depending on roles
     const adminLink = document.getElementById('sidebar-menu-admin');
     const roadmapLink = document.getElementById('sidebar-menu-roadmap');
@@ -1103,6 +1109,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const progressStat = document.getElementById('stat-roadmap-progress');
     if (progressStat) progressStat.innerText = `${progressPercentage}%`;
+    const progressStatBar = document.getElementById('stat-roadmap-progress-bar');
+    if (progressStatBar) progressStatBar.style.width = `${progressPercentage}%`;
 
     // 2. Practice quiz score calculation
     let practiceScores = JSON.parse(localStorage.getItem('litcrack_practice_scores') || '[]');
@@ -1113,11 +1121,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const quizStat = document.getElementById('stat-quiz-score');
     if (quizStat) quizStat.innerText = `${avgScore}%`;
+    const quizStatBar = document.getElementById('stat-quiz-score-bar');
+    if (quizStatBar) quizStatBar.style.width = `${avgScore}%`;
 
     // 3. GD practice count
     let gdCount = localStorage.getItem('litcrack_gd_count') || '0';
     const gdStat = document.getElementById('stat-gd-topics');
     if (gdStat) gdStat.innerText = gdCount;
+    const gdStatBar = document.getElementById('stat-gd-topics-bar');
+    if (gdStatBar) {
+      let gdVal = parseInt(gdCount);
+      let gdPercentage = Math.min(Math.round((gdVal / 5) * 100), 100);
+      gdStatBar.style.width = `${gdPercentage}%`;
+    }
   }
 
   // ==========================================================================

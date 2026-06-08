@@ -79,7 +79,7 @@
           <label for="reg-name">Full Name</label>
           <input type="text" id="reg-name" class="form-control" placeholder="e.g. Anita Naik">
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;" class="grid-2">
+        <div class="grid-2" style="gap: 1rem;">
           <div class="form-group">
             <label for="reg-usn">USN (Seat No.)</label>
             <input type="text" id="reg-usn" class="form-control" placeholder="e.g. 2KL20CS042" style="text-transform: uppercase;">
@@ -235,7 +235,7 @@
           <div class="hero-banner">
             <span class="badge badge-info" style="margin-bottom: 0.75rem; background: rgba(99, 102, 241, 0.2); border-color: var(--primary);">KLE College of Engineering & Technology, Chikodi</span>
             <h1>Elevate Your Skills for <span class="highlight">IT Placements</span></h1>
-            <p style="color: var(--text-accent); margin-bottom: 1.5rem;">Official Career Acceleration Portal of the KLECET Literary & Coding Club, Chikodi.</p>
+            <p style="color: var(--text-accent); margin-bottom: 1.5rem;">Official Career Acceleration Portal of the KLECET Literary Club, Chikodi.</p>
             <button class="btn btn-primary" onclick="window.switchView('roadmap')">
               Explore Roadmap <i class="fa-solid fa-arrow-right"></i>
             </button>
@@ -245,42 +245,76 @@
             <div class="glass-card glow-indigo">
               <span class="badge badge-info">Aptitude</span>
               <div class="stat-value" id="stat-quiz-score">0%</div>
-              <p style="color: var(--text-muted); font-size: 0.85rem;">Avg Practice Quiz Accuracy</p>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;">Avg Practice Quiz Accuracy</p>
+              <div style="height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden;">
+                <div id="stat-quiz-score-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), var(--primary-bright)); transition: width 0.8s ease;"></div>
+              </div>
             </div>
             <div class="glass-card glow-cyan">
               <span class="badge badge-success">GD Hub</span>
               <div class="stat-value" id="stat-gd-topics">0</div>
-              <p style="color: var(--text-muted); font-size: 0.85rem;">GD Topics Practiced Today</p>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;">GD Topics Practiced Today</p>
+              <div style="height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden;">
+                <div id="stat-gd-topics-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--secondary), var(--secondary-bright)); transition: width 0.8s ease;"></div>
+              </div>
             </div>
             <div class="glass-card">
               <span class="badge badge-warning">Roadmap</span>
               <div class="stat-value" id="stat-roadmap-progress">0%</div>
-              <p style="color: var(--text-muted); font-size: 0.85rem;">Overall Milestone Progress</p>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;">Overall Milestone Progress</p>
+              <div style="height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden;">
+                <div id="stat-roadmap-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-rose), #fb7185); transition: width 0.8s ease;"></div>
+              </div>
             </div>
           </div>
 
           <div class="grid-main">
             <div class="glass-card">
-              <h3 style="margin-bottom: 1rem; font-family: var(--font-display);">Welcome back to LitCrack!</h3>
-              <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Use our resources to perfect both coding structures and interview expressions. We believe that coding gets you the interview, but communication cracks it!</p>
+              <h3 style="margin-bottom: 1rem; font-family: var(--font-display);" id="dashboard-welcome-title">Welcome back to LitCrack!</h3>
+              <p style="color: var(--text-muted); margin-bottom: 2rem;">Use our resources to perfect both coding structures and interview expressions. We believe that coding gets you the interview, but communication cracks it!</p>
               
-              <h4 style="margin-bottom: 0.75rem;">Key placement resources:</h4>
-              <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.75rem;">
-                <li style="display: flex; gap: 0.75rem; align-items: flex-start;">
-                  <i class="fa-solid fa-check-circle" style="color: var(--success); margin-top: 0.25rem;"></i>
-                  <div>
-                    <strong>Live Aptitude Arena</strong>
-                    <p style="font-size: 0.85rem; color: var(--text-muted);">Join rooms created by Literary Club admins and compete live with 100+ peers in synchronized, timed tests.</p>
+              <h3 style="margin-bottom: 1.25rem; font-family: var(--font-display);"><i class="fa-solid fa-rocket" style="color: var(--primary); margin-right: 0.5rem;"></i>Interactive Practice Launchpad</h3>
+              <div class="grid-2">
+                <div class="glass-card launch-card" onclick="window.switchView('gd-hub')" style="cursor: pointer; padding: 1.25rem; border: 1px solid rgba(255,255,255,0.03); background: rgba(255,255,255,0.015); transition: var(--transition-normal);">
+                  <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; color: var(--secondary);">
+                      <i class="fa-solid fa-comments" style="font-size: 1.1rem;"></i>
+                    </div>
+                    <h4 style="font-size: 1rem; font-weight: 700; color: #fff;">GD Simulator</h4>
                   </div>
-                </li>
-                <li style="display: flex; gap: 0.75rem; align-items: flex-start;">
-                  <i class="fa-solid fa-check-circle" style="color: var(--success); margin-top: 0.25rem;"></i>
-                  <div>
-                    <strong>AI Voice Interviewer</strong>
-                    <p style="font-size: 0.85rem; color: var(--text-muted);">Receive live speaking tasks. Record speech directly, and get immediate grammar, vocabulary, and tech scoring evaluation cards.</p>
+                  <p style="font-size: 0.8rem; color: var(--text-desc); line-height: 1.4;">Practice structuring arguments and boost your vocabulary under pressure.</p>
+                </div>
+
+                <div class="glass-card launch-card" onclick="window.switchView('star-builder')" style="cursor: pointer; padding: 1.25rem; border: 1px solid rgba(255,255,255,0.03); background: rgba(255,255,255,0.015); transition: var(--transition-normal);">
+                  <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(168, 85, 247, 0.15); display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                      <i class="fa-solid fa-star" style="font-size: 1.1rem;"></i>
+                    </div>
+                    <h4 style="font-size: 1rem; font-weight: 700; color: #fff;">STAR Builder</h4>
                   </div>
-                </li>
-              </ul>
+                  <p style="font-size: 0.8rem; color: var(--text-desc); line-height: 1.4;">Craft structural answers for behavioral and HR rounds using situation metrics.</p>
+                </div>
+
+                <div class="glass-card launch-card" onclick="window.switchView('quiz-arena')" style="cursor: pointer; padding: 1.25rem; border: 1px solid rgba(255,255,255,0.03); background: rgba(255,255,255,0.015); transition: var(--transition-normal);">
+                  <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-gold);">
+                      <i class="fa-solid fa-trophy" style="font-size: 1.1rem;"></i>
+                    </div>
+                    <h4 style="font-size: 1rem; font-weight: 700; color: #fff;">Practice Quiz</h4>
+                  </div>
+                  <p style="font-size: 0.8rem; color: var(--text-desc); line-height: 1.4;">Test your verbal and technical aptitude with detailed explanations.</p>
+                </div>
+
+                <div class="glass-card launch-card" onclick="window.switchView('ai-interview')" style="cursor: pointer; padding: 1.25rem; border: 1px solid rgba(255,255,255,0.03); background: rgba(255,255,255,0.015); transition: var(--transition-normal);">
+                  <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(244, 63, 94, 0.15); display: flex; align-items: center; justify-content: center; color: var(--danger);">
+                      <i class="fa-solid fa-microphone-lines" style="font-size: 1.1rem;"></i>
+                    </div>
+                    <h4 style="font-size: 1rem; font-weight: 700; color: #fff;">AI Mock Interview</h4>
+                  </div>
+                  <p style="font-size: 0.8rem; color: var(--text-desc); line-height: 1.4;">Speak directly to real-time AI and get instant scorecard feedback.</p>
+                </div>
+              </div>
             </div>
 
             <div class="glass-card">
@@ -584,7 +618,7 @@
 
             <!-- Multiplayer Spoken Mock Interview layout -->
             <div id="live-interview-wrapper" style="display: none;">
-              <div class="grid-main" style="grid-template-columns: 1.2fr 0.8fr; gap: 1.5rem;">
+              <div class="grid-interview">
                 <!-- Left: Question chat & Microphone response area -->
                 <div>
                   <div class="glass-card" style="margin-bottom: 1rem; background: rgba(2, 2, 3, 0.4); border-color: var(--border-light);">
@@ -687,20 +721,22 @@
               <div class="glass-card">
                 <h3>Live Standings / Results</h3>
                 <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Leaderboard updates in real-time as peers complete the test.</p>
-                <table class="leaderboard-table">
-                  <thead>
-                    <tr>
-                      <th>Rank</th>
-                      <th>Student</th>
-                      <th>Score</th>
-                      <th>Accuracy</th>
-                      <th>Time Taken</th>
-                    </tr>
-                  </thead>
-                  <tbody id="leaderboard-tbody">
-                    <!-- Sockets will fill this live -->
-                  </tbody>
-                </table>
+                <div style="overflow-x: auto;">
+                  <table class="leaderboard-table">
+                    <thead>
+                      <tr>
+                        <th>Rank</th>
+                        <th>Student</th>
+                        <th>Score</th>
+                        <th>Accuracy</th>
+                        <th>Time Taken</th>
+                      </tr>
+                    </thead>
+                    <tbody id="leaderboard-tbody">
+                      <!-- Sockets will fill this live -->
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               <!-- Winner Certificate Download Column -->
@@ -949,7 +985,7 @@
               <!-- Panel 2: Faculty Editor -->
               <div id="admin-panel-faculties" style="display: none;">
                 <h4 style="margin-bottom: 1rem; color: #fff;">Manage Faculty Directory</h4>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1rem;" class="grid-2">
+                <div class="grid-2" style="gap: 1.5rem; margin-bottom: 1rem;">
                   <div class="form-group">
                     <label for="new-faculty-name">Faculty Name</label>
                     <input type="text" id="new-faculty-name" class="form-control" placeholder="e.g. Dr. Ramesh Patil">
@@ -1038,7 +1074,7 @@
                     <label for="mcq-question">Question Text</label>
                     <input type="text" id="mcq-question" class="form-control" placeholder="e.g. A train running at 60km/h...">
                   </div>
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;" class="grid-2">
+                  <div class="grid-2" style="gap: 1rem; margin-bottom: 1rem;">
                     <div class="form-group">
                       <label for="mcq-opt0">Option 1 (Index 0)</label>
                       <input type="text" id="mcq-opt0" class="form-control" placeholder="Option A">
