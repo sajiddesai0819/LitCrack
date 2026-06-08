@@ -193,6 +193,65 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Sync student progress helper
+  window.syncStudentProgressToServer = async function(data) {
+    if (!currentUser || currentUser.role !== 'student') return;
+    
+    // Update local currentUser object state
+    if (data.roadmapProgress !== undefined) currentUser.roadmapProgress = data.roadmapProgress;
+    if (data.starAnswers !== undefined) currentUser.starAnswers = data.starAnswers;
+    if (data.gdCount !== undefined) currentUser.gdCount = data.gdCount;
+    if (data.practiceScores !== undefined) currentUser.scores = data.practiceScores;
+    
+    localStorage.setItem('litcrack_user', JSON.stringify(currentUser));
+
+    try {
+      const res = await fetch('/api/student/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: currentUser.email, ...data })
+      });
+      const resData = await res.json();
+      if (!resData.success) {
+        console.error("Failed to sync progress to server:", resData.message);
+      }
+    } catch (err) {
+      console.error("Network error during progress sync:", err);
+    }
+  };
+
+  // Sync STAR inputs from LocalStorage
+  function syncStarCardInputsFromLocalStorage() {
+    const savedStar = JSON.parse(localStorage.getItem('litcrack_star_saved') || 'null');
+    if (savedStar) {
+      if (typeof starQuestion !== 'undefined' && starQuestion) {
+        starQuestion.value = savedStar.question || (starQuestion.options[0] ? starQuestion.options[0].value : '');
+      }
+      if (typeof starInputs !== 'undefined') {
+        if (starInputs.situation) starInputs.situation.value = savedStar.situation || '';
+        if (starInputs.task) starInputs.task.value = savedStar.task || '';
+        if (starInputs.action) starInputs.action.value = savedStar.action || '';
+        if (starInputs.result) starInputs.result.value = savedStar.result || '';
+      }
+      if (typeof updateStarPreview === 'function') {
+        updateStarPreview();
+      }
+    } else {
+      if (typeof starQuestion !== 'undefined' && starQuestion) {
+        starQuestion.selectedIndex = 0;
+      }
+      if (typeof starInputs !== 'undefined') {
+        if (starInputs.situation) starInputs.situation.value = '';
+        if (starInputs.task) starInputs.task.value = '';
+        if (starInputs.action) starInputs.action.value = '';
+        if (starInputs.result) starInputs.result.value = '';
+      }
+      if (typeof updateStarPreview === 'function') {
+        updateStarPreview();
+      }
+    }
+  }
+
   // Apply user role view layout
   function applyUserSession() {
     authOverlay.style.display = 'none';
@@ -234,6 +293,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const candidateNameInput = document.getElementById('candidate-name-input');
       if (candidateNameInput) candidateNameInput.value = currentUser.name;
 
+      // Sync student session data into localStorage
+      if (currentUser.scores !== undefined) {
+        localStorage.setItem('litcrack_practice_scores', JSON.stringify(currentUser.scores || []));
+      }
+      if (currentUser.roadmapProgress !== undefined) {
+        localStorage.setItem('litcrack_roadmap_progress', JSON.stringify(currentUser.roadmapProgress || {}));
+      }
+      if (currentUser.starAnswers !== undefined) {
+        localStorage.setItem('litcrack_star_saved', JSON.stringify(currentUser.starAnswers || null));
+      }
+      if (currentUser.gdCount !== undefined) {
+        localStorage.setItem('litcrack_gd_count', currentUser.gdCount || 0);
+      }
+
+      // Sync STAR Card Inputs
+      syncStarCardInputsFromLocalStorage();
+
+      // Refresh Roadmap views & Dashboard stats
+      if (typeof renderRoadmap === 'function') renderRoadmap();
+      if (typeof updateDashboardStats === 'function') updateDashboardStats();
+
       window.switchView('dashboard');
     }
   }
@@ -243,6 +323,10 @@ document.addEventListener('DOMContentLoaded', () => {
     btnLogout.addEventListener('click', () => {
       if (confirm("Logout from LitCrack portal?")) {
         localStorage.removeItem('litcrack_user');
+        localStorage.removeItem('litcrack_practice_scores');
+        localStorage.removeItem('litcrack_roadmap_progress');
+        localStorage.removeItem('litcrack_star_saved');
+        localStorage.removeItem('litcrack_gd_count');
         currentUser = null;
         authOverlay.style.display = 'flex';
         window.switchView('dashboard');
@@ -978,6 +1062,10 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('litcrack_roadmap_progress', JSON.stringify(savedProgress));
         updateRoadmapNodeStates();
         updateDashboardStats();
+
+        if (currentUser && currentUser.role === 'student') {
+          window.syncStudentProgressToServer({ roadmapProgress: savedProgress });
+        }
       });
     });
 
@@ -1064,8 +1152,13 @@ document.addEventListener('DOMContentLoaded', () => {
       gdTopicDisplay.innerText = GD_TOPICS[idx];
       
       let currentCount = parseInt(localStorage.getItem('litcrack_gd_count') || '0');
-      localStorage.setItem('litcrack_gd_count', currentCount + 1);
+      const newCount = currentCount + 1;
+      localStorage.setItem('litcrack_gd_count', newCount);
       updateDashboardStats();
+
+      if (currentUser && currentUser.role === 'student') {
+        window.syncStudentProgressToServer({ gdCount: newCount });
+      }
 
       clearInterval(gdTimerInterval);
       gdTimeLeft = 120;
@@ -1160,6 +1253,10 @@ document.addEventListener('DOMContentLoaded', () => {
       
       localStorage.setItem('litcrack_star_saved', JSON.stringify(compiled));
       alert("STAR Answer Card successfully saved locally!");
+
+      if (currentUser && currentUser.role === 'student') {
+        window.syncStudentProgressToServer({ starAnswers: compiled });
+      }
     });
   }
 
@@ -1174,14 +1271,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const savedStar = JSON.parse(localStorage.getItem('litcrack_star_saved') || 'null');
-  if (savedStar) {
-    if (starInputs.situation) starInputs.situation.value = savedStar.situation;
-    if (starInputs.task) starInputs.task.value = savedStar.task;
-    if (starInputs.action) starInputs.action.value = savedStar.action;
-    if (starInputs.result) starInputs.result.value = savedStar.result;
-    updateStarPreview();
-  }
+  syncStarCardInputsFromLocalStorage();
 
   // ==========================================================================
   // PRACTICE QUIZ ARENA
@@ -1321,7 +1411,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Sync practice scores with database profile
         if (currentUser && currentUser.role === 'student') {
-          // Send stats update trigger if needed, or save locally
+          window.syncStudentProgressToServer({ practiceScores: scores });
         }
 
         updateDashboardStats();

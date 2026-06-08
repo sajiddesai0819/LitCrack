@@ -2,7 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const fs = require('fs');
+const { Pool } = require('pg');
 
 const app = express();
 const server = http.createServer(app);
@@ -16,10 +16,14 @@ const io = new Server(server, {
 // Port configuration
 const PORT = process.env.PORT || 3000;
 
-// JSON Database Path
-const DB_PATH = path.join(__dirname, 'db.json');
+// PostgreSQL Connection Pool Setup
+const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/litcrack';
+const pool = new Pool({
+  connectionString: connectionString,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+});
 
-// Predefined fallback interview questions for the database
+// Predefined fallback interview questions for seeding
 const DEFAULT_INTERVIEW_QUESTIONS = {
   hr: [
     {
@@ -63,98 +67,6 @@ const DEFAULT_INTERVIEW_QUESTIONS = {
   ]
 };
 
-// Initialize database file if it doesn't exist
-function initDatabase() {
-  if (!fs.existsSync(DB_PATH)) {
-    const defaultData = {
-      students: [],
-      faculties: [
-        { id: 1, name: "Dr. Darshankumar D. Billur", role: "Principal, KLECET Chikodi", image: "assets/principal.png" },
-        { id: 2, name: "Dr. Sandeep K.", role: "Dean - Training & Placements", image: "assets/placement_head.png" },
-        { id: 3, name: "Prof. Anita Patil", role: "Literary Club Coordinator", image: "assets/club_coord.png" }
-      ],
-      admin: {
-        email: "admin@klecet.edu.in",
-        password: "admin123"
-      },
-      announcements: [],
-      aptitudeQuestions: [...APTITUDE_QUESTION_POOL],
-      interviewQuestions: DEFAULT_INTERVIEW_QUESTIONS
-    };
-    fs.writeFileSync(DB_PATH, JSON.stringify(defaultData, null, 2));
-    console.log("Initialized new database file: db.json");
-  }
-}
-initDatabase();
-
-// Helper to read database
-function readDatabase() {
-  try {
-    const data = fs.readFileSync(DB_PATH, 'utf8');
-    const db = JSON.parse(data);
-    
-    let updated = false;
-    if (!db.announcements) {
-      db.announcements = [];
-      updated = true;
-    }
-    if (!db.aptitudeQuestions || db.aptitudeQuestions.length === 0) {
-      db.aptitudeQuestions = [...APTITUDE_QUESTION_POOL];
-      updated = true;
-    }
-    if (!db.interviewQuestions || !db.interviewQuestions.hr || db.interviewQuestions.hr.length === 0) {
-      db.interviewQuestions = DEFAULT_INTERVIEW_QUESTIONS;
-      updated = true;
-    }
-    
-    if (updated) {
-      fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
-    }
-    return db;
-  } catch (err) {
-    console.error("Error reading database, resetting.", err);
-    return { 
-      students: [], 
-      faculties: [], 
-      admin: { email: "admin@klecet.edu.in", password: "admin123" }, 
-      announcements: [], 
-      aptitudeQuestions: [...APTITUDE_QUESTION_POOL], 
-      interviewQuestions: DEFAULT_INTERVIEW_QUESTIONS 
-    };
-  }
-}
-
-// Helper to write database
-function writeDatabase(data) {
-  try {
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
-  } catch (err) {
-    console.error("Error writing database", err);
-  }
-}
-
-
-// Middleware
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Memory storage for active rooms
-// roomCode -> { code, adminId, status, students: [{id, name, score, finished, timeTaken}], questions, duration, timeLeft }
-const rooms = new Map();
-
-// Helper to generate a unique 4-character uppercase code
-function generateRoomCode() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let code;
-  do {
-    code = '';
-    for (let i = 0; i < 4; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-  } while (rooms.has(code));
-  return code;
-}
-
 // Sample placement aptitude question database
 const APTITUDE_QUESTION_POOL = [
   {
@@ -194,83 +106,239 @@ const APTITUDE_QUESTION_POOL = [
   }
 ];
 
+// Initialize and Create Postgres tables
+async function initPostgresDatabase() {
+  try {
+    // 1. Create students table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS students (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        usn VARCHAR(50) UNIQUE NOT NULL,
+        branch VARCHAR(50) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        roadmap_progress JSONB DEFAULT '{}'::jsonb,
+        star_answers JSONB DEFAULT '[]'::jsonb,
+        gd_count INT DEFAULT 0,
+        scores JSONB DEFAULT '[]'::jsonb
+      );
+    `);
+
+    // 2. Create faculties table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS faculties (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        role VARCHAR(255) NOT NULL,
+        image VARCHAR(255)
+      );
+    `);
+
+    // 3. Create announcements table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS announcements (
+        id BIGINT PRIMARY KEY,
+        date VARCHAR(50) NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        tag VARCHAR(100) NOT NULL,
+        message TEXT NOT NULL,
+        emailed_count INT DEFAULT 0
+      );
+    `);
+
+    // 4. Create aptitude_questions table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS aptitude_questions (
+        id BIGINT PRIMARY KEY,
+        question TEXT NOT NULL,
+        options JSONB NOT NULL,
+        answer INT NOT NULL,
+        explanation TEXT NOT NULL
+      );
+    `);
+
+    // 5. Create interview_questions table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS interview_questions (
+        id BIGINT PRIMARY KEY,
+        category VARCHAR(50) NOT NULL,
+        question TEXT NOT NULL,
+        keywords JSONB NOT NULL,
+        good_phrasing TEXT NOT NULL
+      );
+    `);
+
+    console.log("PostgreSQL schema validated/created successfully.");
+    await seedPostgresDatabase();
+  } catch (err) {
+    console.error("Fatal error initializing PostgreSQL database tables:", err);
+  }
+}
+
+// Seed Postgres with Initial Fallback Assets
+async function seedPostgresDatabase() {
+  try {
+    // 1. Seed faculties
+    const facRes = await pool.query("SELECT COUNT(*) FROM faculties");
+    if (parseInt(facRes.rows[0].count) === 0) {
+      await pool.query(`
+        INSERT INTO faculties (name, role, image) VALUES
+        ('Dr. Darshankumar D. Billur', 'Principal, KLECET Chikodi', 'assets/principal.png'),
+        ('Dr. Sandeep K.', 'Dean - Training & Placements', 'assets/placement_head.png'),
+        ('Prof. Anita Patil', 'Literary Club Coordinator', 'assets/club_coord.png');
+      `);
+      console.log("Seeded faculty directory.");
+    }
+
+    // 2. Seed aptitude questions
+    const aptRes = await pool.query("SELECT COUNT(*) FROM aptitude_questions");
+    if (parseInt(aptRes.rows[0].count) === 0) {
+      for (const q of APTITUDE_QUESTION_POOL) {
+        await pool.query(`
+          INSERT INTO aptitude_questions (id, question, options, answer, explanation)
+          VALUES ($1, $2, $3, $4, $5);
+        `, [q.id, q.question, JSON.stringify(q.options), q.answer, q.explanation]);
+      }
+      console.log("Seeded default aptitude questions.");
+    }
+
+    // 3. Seed interview prompts
+    const intRes = await pool.query("SELECT COUNT(*) FROM interview_questions");
+    if (parseInt(intRes.rows[0].count) === 0) {
+      for (const q of DEFAULT_INTERVIEW_QUESTIONS.hr) {
+        await pool.query(`
+          INSERT INTO interview_questions (id, category, question, keywords, good_phrasing)
+          VALUES ($1, $2, $3, $4, $5);
+        `, [q.id, 'hr', q.question, JSON.stringify(q.keywords), q.goodPhrasing]);
+      }
+      for (const q of DEFAULT_INTERVIEW_QUESTIONS.technical) {
+        await pool.query(`
+          INSERT INTO interview_questions (id, category, question, keywords, good_phrasing)
+          VALUES ($1, $2, $3, $4, $5);
+        `, [q.id, 'technical', q.question, JSON.stringify(q.keywords), q.goodPhrasing]);
+      }
+      console.log("Seeded default interview prompts.");
+    }
+  } catch (err) {
+    console.error("Error seeding default Postgres database tables:", err);
+  }
+}
+
+initPostgresDatabase();
+
+// Middleware
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Memory storage for active rooms
+const rooms = new Map();
+
+// Helper to generate a unique 4-character uppercase code
+function generateRoomCode() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code;
+  do {
+    code = '';
+    for (let i = 0; i < 4; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+  } while (rooms.has(code));
+  return code;
+}
+
 // ==========================================================================
 // REST API ROUTES (AUTHENTICATION & DATABASE CONTROL)
 // ==========================================================================
 
 // 1. Student Registration
-app.post('/api/register', (req, res) => {
+app.post('/api/register', async (req, res) => {
   const { name, usn, branch, email, password } = req.body;
   
   if (!name || !usn || !branch || !email || !password) {
     return res.status(400).json({ success: false, message: "Please fill out all registration fields." });
   }
 
-  const db = readDatabase();
-  
-  // Check if USN already exists
-  if (db.students.some(s => s.usn.toUpperCase() === usn.toUpperCase())) {
-    return res.status(400).json({ success: false, message: "A student with this USN is already registered." });
+  try {
+    // Check if USN already exists
+    const usnCheck = await pool.query("SELECT id FROM students WHERE UPPER(usn) = $1", [usn.toUpperCase()]);
+    if (usnCheck.rows.length > 0) {
+      return res.status(400).json({ success: false, message: "A student with this USN is already registered." });
+    }
+
+    // Check if Email already exists
+    const emailCheck = await pool.query("SELECT id FROM students WHERE LOWER(email) = $1", [email.toLowerCase()]);
+    if (emailCheck.rows.length > 0) {
+      return res.status(400).json({ success: false, message: "A student with this Email is already registered." });
+    }
+
+    // Insert new student record
+    const insertRes = await pool.query(`
+      INSERT INTO students (name, usn, branch, email, password)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING name, usn, branch, email, scores, roadmap_progress AS "roadmapProgress", star_answers AS "starAnswers", gd_count AS "gdCount";
+    `, [name, usn.toUpperCase(), branch, email.toLowerCase(), password]);
+
+    const student = insertRes.rows[0];
+
+    res.status(201).json({ 
+      success: true, 
+      user: { ...student, role: 'student' } 
+    });
+  } catch (err) {
+    console.error("Registration database error:", err);
+    res.status(500).json({ success: false, message: "Server database error during registration." });
   }
-
-  // Check if Email already exists
-  if (db.students.some(s => s.email.toLowerCase() === email.toLowerCase())) {
-    return res.status(400).json({ success: false, message: "A student with this Email is already registered." });
-  }
-
-  const newStudent = {
-    name,
-    usn: usn.toUpperCase(),
-    branch,
-    email: email.toLowerCase(),
-    password, // Stored as plain text for simplicity in local demo deployment
-    scores: [],
-    roadmapProgress: {}
-  };
-
-  db.students.push(newStudent);
-  writeDatabase(db);
-
-  res.status(201).json({ 
-    success: true, 
-    user: { name: newStudent.name, usn: newStudent.usn, branch: newStudent.branch, email: newStudent.email, role: 'student' } 
-  });
 });
 
 // 2. Student & Admin Login
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ success: false, message: "Please provide both email and password." });
   }
 
-  const db = readDatabase();
+  try {
+    // Check if it matches Admin
+    if (email.toLowerCase() === 'admin@klecet.edu.in' && password === 'admin123') {
+      return res.json({
+        success: true,
+        user: { email: email.toLowerCase(), name: "System Admin", role: "admin" }
+      });
+    }
 
-  // Check if it matches Admin
-  if (db.admin.email.toLowerCase() === email.toLowerCase() && db.admin.password === password) {
-    return res.json({
-      success: true,
-      user: { email: db.admin.email, name: "System Admin", role: "admin" }
-    });
+    // Check if it matches Student
+    const studentCheck = await pool.query(`
+      SELECT name, usn, branch, email, scores, roadmap_progress AS "roadmapProgress", star_answers AS "starAnswers", gd_count AS "gdCount"
+      FROM students
+      WHERE LOWER(email) = $1 AND password = $2;
+    `, [email.toLowerCase(), password]);
+
+    if (studentCheck.rows.length > 0) {
+      const student = studentCheck.rows[0];
+      return res.json({
+        success: true,
+        user: { ...student, role: "student" }
+      });
+    }
+
+    res.status(401).json({ success: false, message: "Invalid email or password." });
+  } catch (err) {
+    console.error("Login database error:", err);
+    res.status(500).json({ success: false, message: "Server database error during login." });
   }
-
-  // Check if it matches Student
-  const student = db.students.find(s => s.email.toLowerCase() === email.toLowerCase() && s.password === password);
-  if (student) {
-    return res.json({
-      success: true,
-      user: { name: student.name, usn: student.usn, branch: student.branch, email: student.email, role: "student" }
-    });
-  }
-
-  res.status(401).json({ success: false, message: "Invalid email or password." });
 });
 
 // 3. Public get faculties list
-app.get('/api/faculties', (req, res) => {
-  const db = readDatabase();
-  res.json({ success: true, faculties: db.faculties });
+app.get('/api/faculties', async (req, res) => {
+  try {
+    const facRes = await pool.query("SELECT id, name, role, image FROM faculties ORDER BY id ASC");
+    res.json({ success: true, faculties: facRes.rows });
+  } catch (err) {
+    console.error("Error reading faculties:", err);
+    res.status(500).json({ success: false, message: "Database read error." });
+  }
 });
 
 // ==========================================================================
@@ -288,130 +356,141 @@ function adminVerify(req, res, next) {
 }
 
 // 4. Fetch all students (Admin)
-app.get('/api/admin/students', adminVerify, (req, res) => {
-  const db = readDatabase();
-  // Return students list without passwords
-  const cleanStudents = db.students.map(s => ({
-    name: s.name,
-    usn: s.usn,
-    branch: s.branch,
-    email: s.email,
-    scores: s.scores
-  }));
-  res.json({ success: true, students: cleanStudents });
+app.get('/api/admin/students', adminVerify, async (req, res) => {
+  try {
+    const studentsRes = await pool.query(`
+      SELECT name, usn, branch, email, scores
+      FROM students
+      ORDER BY id DESC;
+    `);
+    res.json({ success: true, students: studentsRes.rows });
+  } catch (err) {
+    console.error("Error fetching students roster:", err);
+    res.status(500).json({ success: false, message: "Database read error." });
+  }
 });
 
 // 5. Add Faculty Member (Admin)
-app.post('/api/admin/faculty/add', adminVerify, (req, res) => {
+app.post('/api/admin/faculty/add', adminVerify, async (req, res) => {
   const { name, role } = req.body;
   if (!name || !role) {
     return res.status(400).json({ success: false, message: "Faculty name and role are required." });
   }
 
-  const db = readDatabase();
-  const newFaculty = {
-    id: Date.now(),
-    name,
-    role,
-    image: "assets/club_coord.png" // default generated fallback avatar
-  };
-
-  db.faculties.push(newFaculty);
-  writeDatabase(db);
-
-  res.json({ success: true, faculty: newFaculty });
+  try {
+    const insertRes = await pool.query(`
+      INSERT INTO faculties (name, role, image)
+      VALUES ($1, $2, $3)
+      RETURNING id, name, role, image;
+    `, [name, role, "assets/club_coord.png"]);
+    res.json({ success: true, faculty: insertRes.rows[0] });
+  } catch (err) {
+    console.error("Error adding faculty:", err);
+    res.status(500).json({ success: false, message: "Database write error." });
+  }
 });
 
 // 6. Delete Faculty Member (Admin)
-app.delete('/api/admin/faculty/remove/:id', adminVerify, (req, res) => {
+app.delete('/api/admin/faculty/remove/:id', adminVerify, async (req, res) => {
   const id = parseInt(req.params.id);
-  const db = readDatabase();
-
-  const initialCount = db.faculties.length;
-  db.faculties = db.faculties.filter(f => f.id !== id);
-
-  if (db.faculties.length === initialCount) {
-    return res.status(404).json({ success: false, message: "Faculty member not found." });
+  try {
+    const delRes = await pool.query("DELETE FROM faculties WHERE id = $1 RETURNING id", [id]);
+    if (delRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Faculty member not found." });
+    }
+    res.json({ success: true, message: "Faculty member successfully removed." });
+  } catch (err) {
+    console.error("Error deleting faculty:", err);
+    res.status(500).json({ success: false, message: "Database write error." });
   }
-
-  writeDatabase(db);
-  res.json({ success: true, message: "Faculty member successfully removed." });
 });
 
 // 7. Get public announcements list
-app.get('/api/announcements', (req, res) => {
-  const db = readDatabase();
-  const sortedAnnouncements = [...db.announcements].sort((a, b) => b.id - a.id);
-  res.json({ success: true, announcements: sortedAnnouncements });
+app.get('/api/announcements', async (req, res) => {
+  try {
+    const anns = await pool.query("SELECT id, date, title, tag, message, emailed_count AS \"emailedCount\" FROM announcements ORDER BY id DESC");
+    res.json({ success: true, announcements: anns.rows });
+  } catch (err) {
+    console.error("Error fetching announcements:", err);
+    res.status(500).json({ success: false, message: "Database read error." });
+  }
 });
 
 // 8. Create & Broadcast announcement (Admin)
-app.post('/api/admin/announcements', adminVerify, (req, res) => {
+app.post('/api/admin/announcements', adminVerify, async (req, res) => {
   const { title, tag, message } = req.body;
   if (!title || !tag || !message) {
     return res.status(400).json({ success: false, message: "Announcement title, tag, and message are required." });
   }
 
-  const db = readDatabase();
+  try {
+    const studentCountRes = await pool.query("SELECT COUNT(*) FROM students");
+    const emailedCount = parseInt(studentCountRes.rows[0].count);
 
-  const newAnn = {
-    id: Date.now(),
-    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-    title,
-    tag,
-    message,
-    emailedCount: db.students.length
-  };
+    const newAnn = {
+      id: Date.now(),
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      title,
+      tag,
+      message,
+      emailedCount
+    };
 
-  db.announcements.push(newAnn);
-  writeDatabase(db);
+    await pool.query(`
+      INSERT INTO announcements (id, date, title, tag, message, emailed_count)
+      VALUES ($1, $2, $3, $4, $5, $6);
+    `, [newAnn.id, newAnn.date, newAnn.title, newAnn.tag, newAnn.message, newAnn.emailedCount]);
 
-  // Simulate Email Dispatching to Console
-  console.log(`\n============================================================`);
-  console.log(`[SMTP EMAIL BROADCAST SYSTEM] Dispatching announcement...`);
-  console.log(`Sender: KLECET Placement & Literary Wing <admin@klecet.edu.in>`);
-  console.log(`Subject: [LitCrack Announcement] ${title}`);
-  console.log(`Tag: [${tag}]`);
-  console.log(`Message Body:\n------------------------------------------------------------\n${message}\n------------------------------------------------------------`);
-  console.log(`Sending to ${db.students.length} registered students:`);
-  db.students.forEach((s, idx) => {
-    console.log(`  [${idx + 1}/${db.students.length}] Sent email to ${s.name} (${s.email})`);
-  });
-  console.log(`============================================================\n`);
+    // Simulate Email Dispatching to Console
+    console.log(`\n============================================================`);
+    console.log(`[SMTP EMAIL BROADCAST SYSTEM] Dispatching announcement...`);
+    console.log(`Sender: KLECET Placement & Literary Wing <admin@klecet.edu.in>`);
+    console.log(`Subject: [LitCrack Announcement] ${title}`);
+    console.log(`Tag: [${tag}]`);
+    console.log(`Message Body:\n------------------------------------------------------------\n${message}\n------------------------------------------------------------`);
+    console.log(`Sending to ${emailedCount} registered students...`);
+    console.log(`============================================================\n`);
 
-  res.json({ success: true, announcement: newAnn });
+    res.json({ success: true, announcement: newAnn });
+  } catch (err) {
+    console.error("Error creating announcement:", err);
+    res.status(500).json({ success: false, message: "Database write error." });
+  }
 });
 
 // 9. Remove announcement (Admin)
-app.delete('/api/admin/announcements/:id', adminVerify, (req, res) => {
+app.delete('/api/admin/announcements/:id', adminVerify, async (req, res) => {
   const id = parseInt(req.params.id);
-  const db = readDatabase();
-
-  const initialCount = db.announcements.length;
-  db.announcements = db.announcements.filter(a => a.id !== id);
-
-  if (db.announcements.length === initialCount) {
-    return res.status(404).json({ success: false, message: "Announcement not found." });
+  try {
+    const delRes = await pool.query("DELETE FROM announcements WHERE id = $1 RETURNING id", [id]);
+    if (delRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Announcement not found." });
+    }
+    res.json({ success: true, message: "Announcement successfully deleted." });
+  } catch (err) {
+    console.error("Error deleting announcement:", err);
+    res.status(500).json({ success: false, message: "Database write error." });
   }
-
-  writeDatabase(db);
-  res.json({ success: true, message: "Announcement successfully deleted." });
 });
 
 // 10. Get all aptitude questions (Admin/Public)
-app.get('/api/admin/questions/aptitude', adminVerify, (req, res) => {
-  const db = readDatabase();
-  res.json({ success: true, questions: db.aptitudeQuestions });
+app.get('/api/admin/questions/aptitude', adminVerify, async (req, res) => {
+  try {
+    const questions = await pool.query("SELECT id, question, options, answer, explanation FROM aptitude_questions ORDER BY id ASC");
+    res.json({ success: true, questions: questions.rows });
+  } catch (err) {
+    console.error("Error fetching aptitude questions:", err);
+    res.status(500).json({ success: false, message: "Database read error." });
+  }
 });
 
 // 11. Add new aptitude question (Admin)
-app.post('/api/admin/questions/aptitude', adminVerify, (req, res) => {
+app.post('/api/admin/questions/aptitude', adminVerify, async (req, res) => {
   const { question, options, answer, explanation } = req.body;
   if (!question || !options || options.length !== 4 || answer === undefined || !explanation) {
     return res.status(400).json({ success: false, message: "Provide question text, exactly 4 options, correct answer index, and an explanation." });
   }
 
-  const db = readDatabase();
   const newQ = {
     id: Date.now(),
     question,
@@ -420,43 +499,56 @@ app.post('/api/admin/questions/aptitude', adminVerify, (req, res) => {
     explanation
   };
 
-  db.aptitudeQuestions.push(newQ);
-  writeDatabase(db);
-  res.json({ success: true, question: newQ });
+  try {
+    await pool.query(`
+      INSERT INTO aptitude_questions (id, question, options, answer, explanation)
+      VALUES ($1, $2, $3, $4, $5);
+    `, [newQ.id, newQ.question, JSON.stringify(newQ.options), newQ.answer, newQ.explanation]);
+    res.json({ success: true, question: newQ });
+  } catch (err) {
+    console.error("Error adding aptitude question:", err);
+    res.status(500).json({ success: false, message: "Database write error." });
+  }
 });
 
 // 12. Delete aptitude question (Admin)
-app.delete('/api/admin/questions/aptitude/:id', adminVerify, (req, res) => {
+app.delete('/api/admin/questions/aptitude/:id', adminVerify, async (req, res) => {
   const id = parseInt(req.params.id);
-  const db = readDatabase();
-
-  const initialCount = db.aptitudeQuestions.length;
-  db.aptitudeQuestions = db.aptitudeQuestions.filter(q => q.id !== id);
-
-  if (db.aptitudeQuestions.length === initialCount) {
-    return res.status(404).json({ success: false, message: "Question not found." });
+  try {
+    const delRes = await pool.query("DELETE FROM aptitude_questions WHERE id = $1 RETURNING id", [id]);
+    if (delRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Question not found." });
+    }
+    res.json({ success: true, message: "Aptitude question successfully removed." });
+  } catch (err) {
+    console.error("Error deleting aptitude question:", err);
+    res.status(500).json({ success: false, message: "Database write error." });
   }
-
-  writeDatabase(db);
-  res.json({ success: true, message: "Aptitude question successfully removed." });
 });
 
 // 13. Get all interview questions (Public)
-app.get('/api/questions/interview', (req, res) => {
-  const db = readDatabase();
-  res.json({ success: true, interviewQuestions: db.interviewQuestions });
+app.get('/api/questions/interview', async (req, res) => {
+  try {
+    const hrQ = await pool.query("SELECT id, question, keywords, good_phrasing AS \"goodPhrasing\" FROM interview_questions WHERE category = 'hr' ORDER BY id ASC");
+    const techQ = await pool.query("SELECT id, question, keywords, good_phrasing AS \"goodPhrasing\" FROM interview_questions WHERE category = 'technical' ORDER BY id ASC");
+    res.json({
+      success: true,
+      interviewQuestions: {
+        hr: hrQ.rows,
+        technical: techQ.rows
+      }
+    });
+  } catch (err) {
+    console.error("Error reading interview questions:", err);
+    res.status(500).json({ success: false, message: "Database read error." });
+  }
 });
 
 // 14. Add new mock interview question (Admin)
-app.post('/api/admin/questions/interview', adminVerify, (req, res) => {
+app.post('/api/admin/questions/interview', adminVerify, async (req, res) => {
   const { category, question, keywords, goodPhrasing } = req.body;
   if (!category || !question || !keywords || !goodPhrasing) {
     return res.status(400).json({ success: false, message: "Category (hr/technical), question text, keywords, and model phrasing are required." });
-  }
-
-  const db = readDatabase();
-  if (!db.interviewQuestions[category]) {
-    db.interviewQuestions[category] = [];
   }
 
   const kwArr = keywords.split(',').map(k => k.trim().toLowerCase()).filter(k => k.length > 0);
@@ -467,51 +559,91 @@ app.post('/api/admin/questions/interview', adminVerify, (req, res) => {
     goodPhrasing
   };
 
-  db.interviewQuestions[category].push(newQ);
-  writeDatabase(db);
-  res.json({ success: true, question: newQ });
+  try {
+    await pool.query(`
+      INSERT INTO interview_questions (id, category, question, keywords, good_phrasing)
+      VALUES ($1, $2, $3, $4, $5);
+    `, [newQ.id, category, newQ.question, JSON.stringify(newQ.keywords), newQ.goodPhrasing]);
+    res.json({ success: true, question: newQ });
+  } catch (err) {
+    console.error("Error adding interview question:", err);
+    res.status(500).json({ success: false, message: "Database write error." });
+  }
 });
 
 // 15. Delete mock interview question (Admin)
-app.delete('/api/admin/questions/interview/:category/:id', adminVerify, (req, res) => {
+app.delete('/api/admin/questions/interview/:category/:id', adminVerify, async (req, res) => {
   const { category, id } = req.params;
   const qId = parseInt(id);
-  const db = readDatabase();
+  try {
+    const delRes = await pool.query("DELETE FROM interview_questions WHERE category = $1 AND id = $2 RETURNING id", [category, qId]);
+    if (delRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Interview question not found." });
+    }
+    res.json({ success: true, message: "Interview question successfully removed." });
+  } catch (err) {
+    console.error("Error deleting interview question:", err);
+    res.status(500).json({ success: false, message: "Database write error." });
+  }
+});
 
-  if (!db.interviewQuestions[category]) {
-    return res.status(404).json({ success: false, message: "Interview category not found." });
+// 16. Student Progress Synchronization (NEW)
+app.post('/api/student/sync', async (req, res) => {
+  const { email, roadmapProgress, starAnswers, gdCount, practiceScores } = req.body;
+  if (!email) {
+    return res.status(400).json({ success: false, message: "Email is required." });
   }
 
-  const initialCount = db.interviewQuestions[category].length;
-  db.interviewQuestions[category] = db.interviewQuestions[category].filter(q => q.id !== qId);
+  try {
+    const studentRes = await pool.query("SELECT id, roadmap_progress, star_answers, gd_count, scores FROM students WHERE LOWER(email) = $1", [email.toLowerCase()]);
+    if (studentRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Student not found." });
+    }
 
-  if (db.interviewQuestions[category].length === initialCount) {
-    return res.status(404).json({ success: false, message: "Interview question not found." });
+    const currentStudent = studentRes.rows[0];
+
+    const newRoadmap = roadmapProgress !== undefined ? JSON.stringify(roadmapProgress) : JSON.stringify(currentStudent.roadmap_progress);
+    const newStar = starAnswers !== undefined ? JSON.stringify(starAnswers) : JSON.stringify(currentStudent.star_answers);
+    const newGdCount = gdCount !== undefined ? parseInt(gdCount) : currentStudent.gd_count;
+    const newScores = practiceScores !== undefined ? JSON.stringify(practiceScores) : JSON.stringify(currentStudent.scores);
+
+    await pool.query(`
+      UPDATE students
+      SET roadmap_progress = $1, star_answers = $2, gd_count = $3, scores = $4
+      WHERE id = $5;
+    `, [newRoadmap, newStar, newGdCount, newScores, currentStudent.id]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error synchronizing student progress profile:", err);
+    res.status(500).json({ success: false, message: "Database write error." });
   }
-
-  writeDatabase(db);
-  res.json({ success: true, message: "Interview question successfully removed." });
 });
 
 // ==========================================================================
-// SOCKET.IO REAL-TIME APTITUDE ACTIONS
+// SOCKET.IO REAL-TIME APTITUDE & INTERVIEW LOBBIES
 // ==========================================================================
 
 io.on('connection', (socket) => {
   console.log(`Socket connected: ${socket.id}`);
 
-  socket.on('create_room', (data, callback) => {
+  socket.on('create_room', async (data, callback) => {
     const roomCode = generateRoomCode();
     const duration = data.duration || 300;
     const roomType = data.roomType || 'aptitude';
     const interviewFocus = data.interviewFocus || 'hr';
-    const db = readDatabase();
 
     let selectedQuestions = [];
-    if (roomType === 'interview') {
-      selectedQuestions = db.interviewQuestions[interviewFocus] || [];
-    } else {
-      selectedQuestions = db.aptitudeQuestions || [];
+    try {
+      if (roomType === 'interview') {
+        const qRes = await pool.query("SELECT id, question, keywords, good_phrasing AS \"goodPhrasing\" FROM interview_questions WHERE category = $1 ORDER BY id ASC", [interviewFocus]);
+        selectedQuestions = qRes.rows;
+      } else {
+        const qRes = await pool.query("SELECT id, question, options, answer, explanation FROM aptitude_questions ORDER BY id ASC");
+        selectedQuestions = qRes.rows;
+      }
+    } catch (err) {
+      console.error("Error fetching room questions from database:", err);
     }
 
     const room = {
@@ -622,7 +754,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('submit_answers', (data, callback) => {
+  socket.on('submit_answers', async (data, callback) => {
     const { roomCode, answers, email } = data;
     const room = rooms.get(roomCode);
 
@@ -660,22 +792,25 @@ io.on('connection', (socket) => {
     student.finished = true;
     student.timeTaken = timeTaken;
 
-    // Save score directly to user database profile if logged in
     if (email) {
-      const db = readDatabase();
-      const dbStudent = db.students.find(s => s.email.toLowerCase() === email.toLowerCase());
-      if (dbStudent) {
-        if (!dbStudent.scores) dbStudent.scores = [];
-        dbStudent.scores.push({
-          score,
-          correctCount,
-          totalQuestions: room.questions.length,
-          timeTaken,
-          date: new Date().toLocaleDateString(),
-          type: room.roomType === 'interview' ? 'interview' : 'aptitude'
-        });
-        writeDatabase(db);
-        console.log(`Saved ${room.roomType} score ${score}% in database for ${dbStudent.name}`);
+      try {
+        const studentRes = await pool.query("SELECT id, scores FROM students WHERE LOWER(email) = $1", [email.toLowerCase()]);
+        if (studentRes.rows.length > 0) {
+          const dbStudent = studentRes.rows[0];
+          const dbScores = dbStudent.scores || [];
+          dbScores.push({
+            score,
+            correctCount,
+            totalQuestions: room.questions.length,
+            timeTaken,
+            date: new Date().toLocaleDateString(),
+            type: room.roomType === 'interview' ? 'interview' : 'aptitude'
+          });
+          await pool.query("UPDATE students SET scores = $1 WHERE id = $2", [JSON.stringify(dbScores), dbStudent.id]);
+          console.log(`Saved ${room.roomType} score ${score}% in database for ${email}`);
+        }
+      } catch (err) {
+        console.error("Error saving student test score to Postgres:", err);
       }
     }
 
