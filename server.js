@@ -16,12 +16,338 @@ const io = new Server(server, {
 // Port configuration
 const PORT = process.env.PORT || 3000;
 
+const fs = require('fs');
+
 // PostgreSQL Connection Pool Setup
 const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/litcrack';
 const pool = new Pool({
   connectionString: connectionString,
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 1000
 });
+
+let useLocalDb = false;
+
+function readLocalDb() {
+  try {
+    const raw = fs.readFileSync(path.join(__dirname, 'db.json'), 'utf8');
+    return JSON.parse(raw);
+  } catch (e) {
+    return {
+      students: [],
+      faculties: [],
+      announcements: [],
+      aptitudeQuestions: [],
+      interviewQuestions: { hr: [], technical: [] }
+    };
+  }
+}
+
+function writeLocalDb(db) {
+  try {
+    fs.writeFileSync(path.join(__dirname, 'db.json'), JSON.stringify(db, null, 2), 'utf8');
+  } catch (e) {
+    console.error("Failed to write to local db.json:", e);
+  }
+}
+
+async function runLocalQuery(text, params) {
+  const db = readLocalDb();
+  const textClean = text.replace(/\s+/g, ' ').trim();
+
+  // SELECT id FROM students WHERE UPPER(usn) = $1
+  if (textClean.includes("FROM students WHERE UPPER(usn) = $1")) {
+    const usn = params[0].toUpperCase();
+    const students = db.students.filter(s => (s.usn || '').toUpperCase() === usn);
+    return { rows: students.map(s => ({ id: s.id || 1 })) };
+  }
+
+  // SELECT id FROM students WHERE LOWER(email) = $1
+  if (textClean.includes("FROM students WHERE LOWER(email) = $1")) {
+    const email = params[0].toLowerCase();
+    const students = db.students.filter(s => (s.email || '').toLowerCase() === email);
+    return { rows: students.map(s => ({ id: s.id || 1 })) };
+  }
+
+  // INSERT INTO students ... RETURNING
+  if (textClean.startsWith("INSERT INTO students")) {
+    const [name, usn, branch, email, password] = params;
+    const newStudent = {
+      id: db.students.length + 1,
+      name,
+      usn: usn.toUpperCase(),
+      branch,
+      email: email.toLowerCase(),
+      password,
+      scores: [],
+      roadmapProgress: {},
+      starAnswers: [],
+      gdCount: 0
+    };
+    db.students.push(newStudent);
+    writeLocalDb(db);
+    return {
+      rows: [{
+        name: newStudent.name,
+        usn: newStudent.usn,
+        branch: newStudent.branch,
+        email: newStudent.email,
+        scores: newStudent.scores,
+        roadmapProgress: newStudent.roadmapProgress,
+        starAnswers: newStudent.starAnswers,
+        gdCount: newStudent.gdCount
+      }]
+    };
+  }
+
+  // SELECT ... FROM students WHERE LOWER(email) = $1 AND password = $2
+  if (textClean.includes("FROM students WHERE LOWER(email) = $1 AND password = $2")) {
+    const email = params[0].toLowerCase();
+    const password = params[1];
+    const s = db.students.find(x => (x.email || '').toLowerCase() === email && x.password === password);
+    if (s) {
+      return {
+        rows: [{
+          name: s.name,
+          usn: s.usn,
+          branch: s.branch,
+          email: s.email,
+          scores: s.scores || [],
+          roadmapProgress: s.roadmapProgress || s.roadmap_progress || {},
+          starAnswers: s.starAnswers || s.star_answers || [],
+          gdCount: s.gdCount || s.gd_count || 0
+        }]
+      };
+    }
+    return { rows: [] };
+  }
+
+  // SELECT id, name, role, image FROM faculties ORDER BY id ASC
+  if (textClean.includes("FROM faculties ORDER BY id ASC") || textClean.includes("FROM faculties")) {
+    return { rows: db.faculties || [] };
+  }
+
+  // SELECT name, usn, branch, email, scores FROM students ORDER BY id DESC
+  if (textClean.includes("FROM students ORDER BY id DESC")) {
+    return {
+      rows: db.students.map(s => ({
+        name: s.name,
+        usn: s.usn,
+        branch: s.branch,
+        email: s.email,
+        scores: s.scores || []
+      }))
+    };
+  }
+
+  // INSERT INTO faculties
+  if (textClean.startsWith("INSERT INTO faculties")) {
+    const [name, role, image] = params;
+    const newFac = {
+      id: db.faculties.length + 1,
+      name,
+      role,
+      image: image || "assets/club_coord.png"
+    };
+    db.faculties.push(newFac);
+    writeLocalDb(db);
+    return { rows: [newFac] };
+  }
+
+  // DELETE FROM faculties WHERE id = $1
+  if (textClean.startsWith("DELETE FROM faculties WHERE id = $1")) {
+    const id = parseInt(params[0]);
+    const idx = db.faculties.findIndex(f => f.id === id);
+    if (idx !== -1) {
+      const removed = db.faculties.splice(idx, 1)[0];
+      writeLocalDb(db);
+      return { rows: [removed] };
+    }
+    return { rows: [] };
+  }
+
+  // SELECT ... FROM announcements ORDER BY id DESC
+  if (textClean.includes("FROM announcements ORDER BY id DESC") || textClean.includes("FROM announcements")) {
+    return { rows: db.announcements || [] };
+  }
+
+  // SELECT COUNT(*) FROM students
+  if (textClean.includes("SELECT COUNT(*) FROM students")) {
+    return { rows: [{ count: db.students.length }] };
+  }
+
+  // SELECT COUNT(*) FROM faculties
+  if (textClean.includes("SELECT COUNT(*) FROM faculties")) {
+    return { rows: [{ count: db.faculties.length }] };
+  }
+
+  // SELECT COUNT(*) FROM aptitude_questions
+  if (textClean.includes("SELECT COUNT(*) FROM aptitude_questions")) {
+    return { rows: [{ count: db.aptitudeQuestions.length }] };
+  }
+
+  // SELECT COUNT(*) FROM interview_questions
+  if (textClean.includes("SELECT COUNT(*) FROM interview_questions")) {
+    const count = (db.interviewQuestions?.hr?.length || 0) + (db.interviewQuestions?.technical?.length || 0);
+    return { rows: [{ count }] };
+  }
+
+  // INSERT INTO announcements
+  if (textClean.startsWith("INSERT INTO announcements")) {
+    const [id, date, title, tag, message, emailed_count] = params;
+    const newAnn = { id, date, title, tag, message, emailedCount: emailed_count };
+    db.announcements = db.announcements || [];
+    db.announcements.push(newAnn);
+    writeLocalDb(db);
+    return { rows: [newAnn] };
+  }
+
+  // DELETE FROM announcements WHERE id = $1
+  if (textClean.startsWith("DELETE FROM announcements WHERE id = $1")) {
+    const id = parseInt(params[0]);
+    db.announcements = db.announcements || [];
+    const idx = db.announcements.findIndex(a => a.id === id);
+    if (idx !== -1) {
+      const removed = db.announcements.splice(idx, 1)[0];
+      writeLocalDb(db);
+      return { rows: [removed] };
+    }
+    return { rows: [] };
+  }
+
+  // SELECT id, question, options, answer, explanation FROM aptitude_questions ORDER BY id ASC
+  if (textClean.includes("FROM aptitude_questions ORDER BY id ASC") || textClean.includes("FROM aptitude_questions")) {
+    return { rows: db.aptitudeQuestions || [] };
+  }
+
+  // INSERT INTO aptitude_questions
+  if (textClean.startsWith("INSERT INTO aptitude_questions")) {
+    const [id, question, optionsRaw, answer, explanation] = params;
+    const options = typeof optionsRaw === 'string' ? JSON.parse(optionsRaw) : optionsRaw;
+    const newQ = { id, question, options, answer, explanation };
+    db.aptitudeQuestions.push(newQ);
+    writeLocalDb(db);
+    return { rows: [newQ] };
+  }
+
+  // DELETE FROM aptitude_questions WHERE id = $1
+  if (textClean.startsWith("DELETE FROM aptitude_questions WHERE id = $1")) {
+    const id = parseInt(params[0]);
+    const idx = db.aptitudeQuestions.findIndex(q => q.id === id);
+    if (idx !== -1) {
+      const removed = db.aptitudeQuestions.splice(idx, 1)[0];
+      writeLocalDb(db);
+      return { rows: [removed] };
+    }
+    return { rows: [] };
+  }
+
+  // SELECT id, question, keywords, good_phrasing AS "goodPhrasing" FROM interview_questions WHERE category = $1
+  if (textClean.includes("FROM interview_questions WHERE category = $1") || textClean.includes("FROM interview_questions WHERE category = 'hr'") || textClean.includes("FROM interview_questions WHERE category = 'technical'")) {
+    let cat = params[0] || (textClean.includes("category = 'hr'") ? 'hr' : 'technical');
+    let questions = db.interviewQuestions?.[cat] || [];
+    return {
+      rows: questions.map(q => ({
+        id: q.id,
+        question: q.question,
+        keywords: q.keywords,
+        goodPhrasing: q.goodPhrasing || q.good_phrasing
+      }))
+    };
+  }
+
+  // INSERT INTO interview_questions
+  if (textClean.startsWith("INSERT INTO interview_questions")) {
+    const [id, category, question, keywordsRaw, good_phrasing] = params;
+    const keywords = typeof keywordsRaw === 'string' ? JSON.parse(keywordsRaw) : keywordsRaw;
+    const newQ = { id, question, keywords, goodPhrasing: good_phrasing };
+    db.interviewQuestions = db.interviewQuestions || { hr: [], technical: [] };
+    db.interviewQuestions[category] = db.interviewQuestions[category] || [];
+    db.interviewQuestions[category].push(newQ);
+    writeLocalDb(db);
+    return { rows: [newQ] };
+  }
+
+  // DELETE FROM interview_questions WHERE category = $1 AND id = $2
+  if (textClean.startsWith("DELETE FROM interview_questions WHERE category = $1 AND id = $2")) {
+    const [category, id] = params;
+    const qId = parseInt(id);
+    db.interviewQuestions = db.interviewQuestions || { hr: [], technical: [] };
+    db.interviewQuestions[category] = db.interviewQuestions[category] || [];
+    const idx = db.interviewQuestions[category].findIndex(q => q.id === qId);
+    if (idx !== -1) {
+      const removed = db.interviewQuestions[category].splice(idx, 1)[0];
+      writeLocalDb(db);
+      return { rows: [removed] };
+    }
+    return { rows: [] };
+  }
+
+  // SELECT ... FROM students WHERE LOWER(email) = $1 (sync student progress)
+  if (textClean.includes("FROM students WHERE LOWER(email) = $1")) {
+    const email = params[0].toLowerCase();
+    const s = db.students.find(x => (x.email || '').toLowerCase() === email);
+    if (s) {
+      return {
+        rows: [{
+          id: s.id,
+          roadmap_progress: s.roadmapProgress || s.roadmap_progress || {},
+          star_answers: s.starAnswers || s.star_answers || [],
+          gd_count: s.gdCount || s.gd_count || 0,
+          scores: s.scores || []
+        }]
+      };
+    }
+    return { rows: [] };
+  }
+
+  // UPDATE students SET roadmap_progress = $1, ... WHERE id = $5
+  if (textClean.startsWith("UPDATE students SET roadmap_progress = $1")) {
+    const [roadmapProgressRaw, starAnswersRaw, gdCount, scoresRaw, id] = params;
+    const roadmapProgress = typeof roadmapProgressRaw === 'string' ? JSON.parse(roadmapProgressRaw) : roadmapProgressRaw;
+    const starAnswers = typeof starAnswersRaw === 'string' ? JSON.parse(starAnswersRaw) : starAnswersRaw;
+    const scores = typeof scoresRaw === 'string' ? JSON.parse(scoresRaw) : scoresRaw;
+
+    const s = db.students.find(x => x.id === id);
+    if (s) {
+      s.roadmapProgress = roadmapProgress;
+      s.starAnswers = starAnswers;
+      s.gdCount = parseInt(gdCount);
+      s.scores = scores;
+      writeLocalDb(db);
+    }
+    return { rows: [] };
+  }
+
+  // UPDATE students SET scores = $1 WHERE id = $2
+  if (textClean.startsWith("UPDATE students SET scores = $1 WHERE id = $2")) {
+    const [scoresRaw, id] = params;
+    const scores = typeof scoresRaw === 'string' ? JSON.parse(scoresRaw) : scoresRaw;
+    const s = db.students.find(x => x.id === id);
+    if (s) {
+      s.scores = scores;
+      writeLocalDb(db);
+    }
+    return { rows: [] };
+  }
+
+  console.warn("Unmatched local database query:", textClean);
+  return { rows: [] };
+}
+
+const originalQuery = pool.query.bind(pool);
+pool.query = async function(text, params) {
+  if (useLocalDb) {
+    return runLocalQuery(text, params);
+  }
+  try {
+    return await originalQuery(text, params);
+  } catch (err) {
+    console.error("Postgres query failed. Falling back to local db.json store:", err.message);
+    useLocalDb = true;
+    return runLocalQuery(text, params);
+  }
+};
 
 // Predefined fallback interview questions for seeding
 const DEFAULT_INTERVIEW_QUESTIONS = {
@@ -109,6 +435,10 @@ const APTITUDE_QUESTION_POOL = [
 // Initialize and Create Postgres tables
 async function initPostgresDatabase() {
   try {
+    // Test connection quickly on boot
+    const client = await pool.connect();
+    client.release();
+
     // 1. Create students table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS students (
@@ -173,6 +503,7 @@ async function initPostgresDatabase() {
     await seedPostgresDatabase();
   } catch (err) {
     console.error("Fatal error initializing PostgreSQL database tables:", err);
+    useLocalDb = true;
   }
 }
 
@@ -230,6 +561,11 @@ initPostgresDatabase();
 // Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Keep-alive / ping endpoint to prevent Render.com spin-downs
+app.get('/ping', (req, res) => {
+  res.json({ status: "alive", timestamp: new Date() });
+});
 
 // Memory storage for active rooms
 const rooms = new Map();

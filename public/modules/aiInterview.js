@@ -40,6 +40,13 @@
   const panelEvaluation = document.getElementById('ai-evaluation-results');
   const placeholderEvaluation = document.getElementById('ai-evaluation-placeholder');
 
+  // Tabs for mobile
+  const tabBtnChat = document.getElementById('tab-btn-chat');
+  const tabBtnFeedback = document.getElementById('tab-btn-feedback');
+  const chatColumn = document.getElementById('interview-chat-column');
+  const evalPanel = document.getElementById('interview-evaluation-panel');
+  const feedbackDot = document.getElementById('feedback-dot');
+
   const labelGrade = document.getElementById('eval-grade');
   const labelTech = document.getElementById('score-tech');
   const labelGrammar = document.getElementById('score-grammar');
@@ -137,6 +144,13 @@
 
       panelConfig.style.display = 'none';
       panelRoom.style.display = 'grid';
+
+      // Reset active tabs on launch
+      if (tabBtnChat) tabBtnChat.classList.add('active');
+      if (tabBtnFeedback) tabBtnFeedback.classList.remove('active');
+      if (chatColumn) chatColumn.style.display = 'block';
+      if (evalPanel) evalPanel.style.display = 'none';
+      if (feedbackDot) feedbackDot.style.display = 'none';
 
       // Clear chat
       chatContainer.innerHTML = '';
@@ -295,6 +309,7 @@ Return your response in strict, valid JSON format matching this schema, with no 
       barStructure.style.width = `${scoreStructure}%`;
 
       textSuggested.innerText = suggested;
+      triggerScorecardUpdateNotify();
 
     } catch (err) {
       console.warn("Gemini API failed, falling back to local simulator.", err);
@@ -379,6 +394,33 @@ Return your response in strict, valid JSON format matching this schema, with no 
     // What you said vs Suggested phrasing
     textSaid.innerText = `"${userAnswer}"`;
     textSuggested.innerText = q.phrasingFix.good;
+    triggerScorecardUpdateNotify();
+  }
+
+  function triggerScorecardUpdateNotify() {
+    if (window.innerWidth <= 1024) {
+      if (tabBtnFeedback && !tabBtnFeedback.classList.contains('active')) {
+        if (feedbackDot) feedbackDot.style.display = 'block';
+      }
+    }
+  }
+
+  // Bind mobile tabs click actions
+  if (tabBtnChat && tabBtnFeedback && chatColumn && evalPanel) {
+    tabBtnChat.addEventListener('click', () => {
+      tabBtnChat.classList.add('active');
+      tabBtnFeedback.classList.remove('active');
+      chatColumn.style.display = 'block';
+      evalPanel.style.display = 'none';
+    });
+
+    tabBtnFeedback.addEventListener('click', () => {
+      tabBtnFeedback.classList.add('active');
+      tabBtnChat.classList.remove('active');
+      evalPanel.style.display = 'block';
+      chatColumn.style.display = 'none';
+      if (feedbackDot) feedbackDot.style.display = 'none';
+    });
   }
 
   // End Interview Simulation

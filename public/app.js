@@ -59,18 +59,34 @@ document.addEventListener('DOMContentLoaded', () => {
   // Active Session State
   let currentUser = null; // { name, usn, branch, email, role }
 
-  // Mobile Drawer Toggle
+  // Mobile Drawer Toggle with scroll lock
   function toggleSidebar() {
     sidebar.classList.toggle('open');
     if (sidebar.classList.contains('open')) {
       overlay.style.display = 'block';
+      document.body.style.overflow = 'hidden';
     } else {
       overlay.style.display = 'none';
+      document.body.style.overflow = '';
     }
   }
 
   if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
   if (overlay) overlay.addEventListener('click', toggleSidebar);
+
+  // Desktop sidebar scroll lock on hover
+  if (sidebar) {
+    sidebar.addEventListener('mouseenter', () => {
+      if (window.innerWidth > 768) {
+        document.body.style.overflow = 'hidden';
+      }
+    });
+    sidebar.addEventListener('mouseleave', () => {
+      if (window.innerWidth > 768) {
+        document.body.style.overflow = '';
+      }
+    });
+  }
 
   // Switch View Routing
   window.switchView = (viewId) => {
@@ -105,6 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
       loadFacultiesRoster();
     } else if (viewId === 'admin-deck') {
       loadAdminDashboardData();
+    } else if (viewId === 'student-profile') {
+      renderStudentProfile();
     }
   };
 
@@ -226,11 +244,21 @@ document.addEventListener('DOMContentLoaded', () => {
     
     localStorage.setItem('litcrack_user', JSON.stringify(currentUser));
 
+    // Prepare payload
+    let payload = { ...data };
+    if (payload.roadmapProgress !== undefined) {
+      const profile = JSON.parse(localStorage.getItem('litcrack_student_profile') || 'null');
+      if (profile) {
+        // Merge profile into roadmapProgress payload under __profile
+        payload.roadmapProgress = { ...payload.roadmapProgress, __profile: profile };
+      }
+    }
+
     try {
       const res = await fetch('/api/student/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: currentUser.email, ...data })
+        body: JSON.stringify({ email: currentUser.email, ...payload })
       });
       const resData = await res.json();
       if (!resData.success) {
@@ -332,19 +360,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // Toggle Sidebar controls depending on roles
     const adminLink = document.getElementById('sidebar-menu-admin');
     const roadmapLink = document.getElementById('sidebar-menu-roadmap');
+    const gdLink = document.getElementById('sidebar-menu-gd');
     const starLink = document.getElementById('sidebar-menu-star');
+    const quizLink = document.getElementById('sidebar-menu-quiz');
+    const liveLink = document.getElementById('sidebar-menu-livetest');
     const aiLink = document.getElementById('sidebar-menu-ai');
+    const profileLink = document.getElementById('sidebar-menu-profile');
     
     const adminCreateLobby = document.getElementById('admin-create-room-panel');
 
     if (currentUser.role === 'admin') {
       navRole.innerText = "KLECET Administrator";
       if (adminLink) adminLink.style.display = 'block';
+      if (roadmapLink) roadmapLink.style.display = 'none';
+      if (gdLink) gdLink.style.display = 'none';
+      if (starLink) starLink.style.display = 'none';
+      if (quizLink) quizLink.style.display = 'none';
+      if (liveLink) liveLink.style.display = 'none';
+      if (aiLink) aiLink.style.display = 'none';
+      if (profileLink) profileLink.style.display = 'none';
       if (adminCreateLobby) adminCreateLobby.style.display = 'block';
       window.switchView('admin-deck');
     } else {
       navRole.innerText = `${currentUser.branch} - ${currentUser.usn}`;
       if (adminLink) adminLink.style.display = 'none';
+      if (roadmapLink) roadmapLink.style.display = 'block';
+      if (gdLink) gdLink.style.display = 'block';
+      if (starLink) starLink.style.display = 'block';
+      if (quizLink) quizLink.style.display = 'block';
+      if (liveLink) liveLink.style.display = 'block';
+      if (aiLink) aiLink.style.display = 'block';
+      if (profileLink) profileLink.style.display = 'block';
       if (adminCreateLobby) adminCreateLobby.style.display = 'none';
 
       // Auto fill student attributes in live test and interviewer profiles
@@ -359,7 +405,13 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('litcrack_practice_scores', JSON.stringify(currentUser.scores || []));
       }
       if (currentUser.roadmapProgress !== undefined) {
-        localStorage.setItem('litcrack_roadmap_progress', JSON.stringify(currentUser.roadmapProgress || {}));
+        let rp = currentUser.roadmapProgress || {};
+        if (rp.__profile) {
+          localStorage.setItem('litcrack_student_profile', JSON.stringify(rp.__profile));
+          rp = { ...rp };
+          delete rp.__profile;
+        }
+        localStorage.setItem('litcrack_roadmap_progress', JSON.stringify(rp));
       }
       if (currentUser.starAnswers !== undefined) {
         localStorage.setItem('litcrack_star_saved', JSON.stringify(currentUser.starAnswers || null));
@@ -370,6 +422,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Sync STAR Card Inputs
       syncStarCardInputsFromLocalStorage();
+
+      // Load Profile theme & details into Sidebar Profile Widget
+      const profile = JSON.parse(localStorage.getItem('litcrack_student_profile') || 'null');
+      if (profile) {
+        updateSidebarProfile(profile);
+        if (welcomeTitle) {
+          welcomeTitle.innerHTML = `Welcome back, <span style="background: linear-gradient(135deg, var(--primary-bright), var(--accent-rose)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">${profile.name}</span>!`;
+        }
+      } else {
+        updateSidebarProfile({
+          name: currentUser.name,
+          role: "KLECET Aspirant",
+          theme: "amethyst"
+        });
+      }
 
       // Refresh Roadmap views & Dashboard stats
       if (typeof renderRoadmap === 'function') renderRoadmap();
@@ -2332,6 +2399,324 @@ document.addEventListener('DOMContentLoaded', () => {
         card.style.transition = 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease';
         card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0deg)`;
       });
+    });
+  }
+
+  // ==========================================================================
+  // STUDENT CAREER PROFILE FUNCTIONS & HANDLERS
+  // ==========================================================================
+
+  function updateSidebarProfile(profile) {
+    if (!profile) return;
+    if (navName) navName.innerText = profile.name || currentUser.name || "Guest Student";
+    if (navRole) navRole.innerText = profile.role || "KLECET Aspirant";
+    if (navAvatar) {
+      navAvatar.innerText = (profile.name || currentUser.name || "LC").split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+      // Remove any existing theme classes
+      navAvatar.classList.remove('avatar-theme-amethyst', 'avatar-theme-emerald', 'avatar-theme-gold', 'avatar-theme-rose');
+      navAvatar.classList.add(`avatar-theme-${profile.theme || 'amethyst'}`);
+    }
+  }
+
+  function renderStudentProfile() {
+    if (!currentUser || currentUser.role !== 'student') return;
+
+    let profile = null;
+    try {
+      profile = JSON.parse(localStorage.getItem('litcrack_student_profile') || 'null');
+    } catch (e) {
+      profile = null;
+    }
+
+    if (!profile) {
+      profile = {
+        name: currentUser.name || "",
+        usn: currentUser.usn || "",
+        branch: currentUser.branch || "",
+        email: currentUser.email || "",
+        phone: "",
+        gradYear: "",
+        cgpa: "",
+        role: "KLECET Aspirant",
+        skills: "",
+        bio: "",
+        linkedin: "",
+        github: "",
+        theme: "amethyst"
+      };
+      localStorage.setItem('litcrack_student_profile', JSON.stringify(profile));
+    }
+
+    // Populate the form fields
+    const inputName = document.getElementById('profile-input-name');
+    const inputUsn = document.getElementById('profile-input-usn');
+    const inputBranch = document.getElementById('profile-input-branch');
+    const inputEmail = document.getElementById('profile-input-email');
+    const inputPhone = document.getElementById('profile-input-phone');
+    const inputGrad = document.getElementById('profile-input-grad');
+    const inputCgpa = document.getElementById('profile-input-cgpa');
+    const inputRole = document.getElementById('profile-input-role');
+    const inputSkills = document.getElementById('profile-input-skills');
+    const inputBio = document.getElementById('profile-input-bio');
+    const inputLinkedin = document.getElementById('profile-input-linkedin');
+    const inputGithub = document.getElementById('profile-input-github');
+
+    if (inputName) inputName.value = profile.name || "";
+    if (inputUsn) inputUsn.value = profile.usn || currentUser.usn || "";
+    if (inputBranch) inputBranch.value = profile.branch || currentUser.branch || "Computer Science";
+    if (inputEmail) inputEmail.value = profile.email || currentUser.email || "";
+    if (inputPhone) inputPhone.value = profile.phone || "";
+    if (inputGrad) inputGrad.value = profile.gradYear || "";
+    if (inputCgpa) inputCgpa.value = profile.cgpa || "";
+    if (inputRole) inputRole.value = profile.role || "";
+    if (inputSkills) inputSkills.value = profile.skills || "";
+    if (inputBio) inputBio.value = profile.bio || "";
+    if (inputLinkedin) inputLinkedin.value = profile.linkedin || "";
+    if (inputGithub) inputGithub.value = profile.github || "";
+
+    // Set active dot for the visual theme
+    const activeTheme = profile.theme || 'amethyst';
+    document.querySelectorAll('.avatar-theme-dot').forEach(dot => {
+      if (dot.getAttribute('data-theme') === activeTheme) {
+        dot.classList.add('active');
+      } else {
+        dot.classList.remove('active');
+      }
+    });
+
+    // Update Skills Tag Pills
+    updateSkillsPills(profile.skills || "");
+
+    // Update the Preview Card on the Left
+    updateProfilePreviewCard(profile);
+
+    // Compute and Render Placement Readiness Gauge & Badge
+    updatePlacementReadinessScore();
+  }
+
+  function updateSkillsPills(skillsStr) {
+    const container = document.getElementById('profile-skills-tags');
+    if (!container) return;
+
+    if (!skillsStr.trim()) {
+      container.innerHTML = `<span style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">No skills added yet</span>`;
+      return;
+    }
+
+    const skills = skillsStr.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    container.innerHTML = skills.map(skill => `
+      <span class="skill-tag-pill">
+        <i class="fa-solid fa-code" style="font-size: 0.7rem; color: var(--primary-bright);"></i>
+        ${skill}
+      </span>
+    `).join('');
+  }
+
+  function updateProfilePreviewCard(profile) {
+    const previewAvatar = document.getElementById('profile-preview-avatar');
+    const previewName = document.getElementById('profile-preview-name');
+    const previewRole = document.getElementById('profile-preview-role');
+    const previewBranch = document.getElementById('profile-preview-branch');
+    const previewUsn = document.getElementById('profile-preview-usn');
+    const linkLinkedin = document.getElementById('profile-link-linkedin');
+    const linkGithub = document.getElementById('profile-link-github');
+    const previewBio = document.getElementById('profile-preview-bio');
+
+    if (previewAvatar) {
+      previewAvatar.innerText = (profile.name || currentUser.name || "LC").split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+      // Remove any existing theme classes
+      previewAvatar.classList.remove('avatar-theme-amethyst', 'avatar-theme-emerald', 'avatar-theme-gold', 'avatar-theme-rose');
+      previewAvatar.classList.add(`avatar-theme-${profile.theme || 'amethyst'}`);
+    }
+
+    if (previewName) previewName.innerText = profile.name || currentUser.name || "Guest Student";
+    if (previewRole) previewRole.innerText = profile.role || "KLECET Aspirant";
+    if (previewBranch) previewBranch.innerText = profile.branch || currentUser.branch || "Computer Science";
+    if (previewUsn) previewUsn.innerText = profile.usn || currentUser.usn || "N/A";
+    
+    if (linkLinkedin) {
+      if (profile.linkedin && profile.linkedin.trim()) {
+        linkLinkedin.href = profile.linkedin.trim();
+        linkLinkedin.style.display = 'inline-flex';
+      } else {
+        linkLinkedin.style.display = 'none';
+      }
+    }
+    
+    if (linkGithub) {
+      if (profile.github && profile.github.trim()) {
+        linkGithub.href = profile.github.trim();
+        linkGithub.style.display = 'inline-flex';
+      } else {
+        linkGithub.style.display = 'none';
+      }
+    }
+
+    if (previewBio) {
+      if (profile.bio && profile.bio.trim()) {
+        previewBio.innerText = `"${profile.bio.trim()}"`;
+      } else {
+        previewBio.innerText = `"No biography details entered yet. Update your career profile settings to show your bio."`;
+      }
+    }
+  }
+
+  function updatePlacementReadinessScore() {
+    const valEl = document.getElementById('profile-readiness-val');
+    const barEl = document.getElementById('profile-readiness-bar');
+    const rankEl = document.getElementById('profile-readiness-rank');
+
+    if (!valEl || !barEl || !rankEl) return;
+
+    // 1. Roadmap Progress (40 max)
+    let checkedTasks = 0;
+    const progress = JSON.parse(localStorage.getItem('litcrack_roadmap_progress') || '{}');
+    for (let key in progress) {
+      if (key !== '__profile' && progress[key] === true) {
+        checkedTasks++;
+      }
+    }
+    // Total tasks count across all milestones is 15
+    const roadmapScore = Math.min(40, (checkedTasks / 15) * 40);
+
+    // 2. Quiz Score (30 max)
+    let quizAvg = 0;
+    try {
+      const scores = JSON.parse(localStorage.getItem('litcrack_practice_scores') || '[]');
+      if (scores && scores.length > 0) {
+        const sum = scores.reduce((a, b) => a + b, 0);
+        quizAvg = sum / scores.length;
+      }
+    } catch(e) {}
+    const quizScore = Math.min(30, (quizAvg / 100) * 30);
+
+    // 3. GD Simulator topics (20 max)
+    let gdCount = parseInt(localStorage.getItem('litcrack_gd_count') || '0', 10);
+    const gdScore = Math.min(20, (gdCount / 5) * 20);
+
+    // 4. STAR Answer Builder (10 max)
+    let starCount = 0;
+    try {
+      const lib = JSON.parse(localStorage.getItem('litcrack_star_saved_library') || '[]');
+      starCount = lib.length;
+    } catch(e) {}
+    const starScore = Math.min(10, (starCount / 2) * 10);
+
+    const totalReadiness = Math.round(roadmapScore + quizScore + gdScore + starScore);
+
+    // Render elements
+    valEl.innerText = `${totalReadiness}%`;
+    barEl.style.width = `${totalReadiness}%`;
+
+    // Reset classes
+    rankEl.className = 'badge-rank';
+    if (totalReadiness >= 85) {
+      rankEl.innerText = "Job-Ready Elite";
+      rankEl.classList.add('elite');
+    } else if (totalReadiness >= 55) {
+      rankEl.innerText = "Strong Contender";
+      rankEl.classList.add('strong');
+    } else if (totalReadiness >= 25) {
+      rankEl.innerText = "Developing Fluency";
+      rankEl.classList.add('developing');
+    } else {
+      rankEl.innerText = "Just Starting";
+      rankEl.classList.add('starting');
+    }
+  }
+
+  // Avatar theme selection event delegation
+  const themeSelectorGrid = document.getElementById('avatar-theme-selector-grid');
+  if (themeSelectorGrid) {
+    themeSelectorGrid.addEventListener('click', (e) => {
+      const dot = e.target.closest('.avatar-theme-dot');
+      if (!dot) return;
+
+      document.querySelectorAll('.avatar-theme-dot').forEach(d => d.classList.remove('active'));
+      dot.classList.add('active');
+
+      const selectedTheme = dot.getAttribute('data-theme');
+      
+      // Update preview card theme immediately
+      const previewAvatar = document.getElementById('profile-preview-avatar');
+      if (previewAvatar) {
+        previewAvatar.className = `profile-avatar-large avatar-theme-${selectedTheme}`;
+      }
+    });
+  }
+
+  // Skills input changes to render tag pills live
+  const skillsInput = document.getElementById('profile-input-skills');
+  if (skillsInput) {
+    skillsInput.addEventListener('input', (e) => {
+      updateSkillsPills(e.target.value);
+    });
+  }
+
+  // Save Career Profile Action
+  const btnSaveProfile = document.getElementById('btn-save-profile');
+  if (btnSaveProfile) {
+    btnSaveProfile.addEventListener('click', async () => {
+      if (!currentUser || currentUser.role !== 'student') return;
+
+      const nameVal = document.getElementById('profile-input-name').value.trim();
+      const usnVal = document.getElementById('profile-input-usn').value.trim();
+      const branchVal = document.getElementById('profile-input-branch').value;
+      const phoneVal = document.getElementById('profile-input-phone').value.trim();
+      const gradVal = document.getElementById('profile-input-grad').value.trim();
+      const cgpaVal = document.getElementById('profile-input-cgpa').value.trim();
+      const roleVal = document.getElementById('profile-input-role').value.trim();
+      const skillsVal = document.getElementById('profile-input-skills').value.trim();
+      const bioVal = document.getElementById('profile-input-bio').value.trim();
+      const linkedinVal = document.getElementById('profile-input-linkedin').value.trim();
+      const githubVal = document.getElementById('profile-input-github').value.trim();
+
+      const activeDot = document.querySelector('.avatar-theme-dot.active');
+      const themeVal = activeDot ? activeDot.getAttribute('data-theme') : 'amethyst';
+
+      if (!nameVal) {
+        alert("Full Name is required.");
+        return;
+      }
+
+      // Construct profile object
+      const profile = {
+        name: nameVal,
+        usn: usnVal,
+        branch: branchVal,
+        email: currentUser.email,
+        phone: phoneVal,
+        gradYear: gradVal,
+        cgpa: cgpaVal,
+        role: roleVal || "KLECET Aspirant",
+        skills: skillsVal,
+        bio: bioVal,
+        linkedin: linkedinVal,
+        github: githubVal,
+        theme: themeVal
+      };
+
+      // Save to localStorage
+      localStorage.setItem('litcrack_student_profile', JSON.stringify(profile));
+
+      // Update sidebar details immediately
+      updateSidebarProfile(profile);
+
+      // Update live preview card
+      updateProfilePreviewCard(profile);
+
+      // Update welcome message
+      const welcomeTitle = document.getElementById('dashboard-welcome-title');
+      if (welcomeTitle) {
+        welcomeTitle.innerHTML = `Welcome back, <span style="background: linear-gradient(135deg, var(--primary-bright), var(--accent-rose)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">${profile.name}</span>!`;
+      }
+
+      // Merge into roadmapProgress for server sync
+      let savedProgress = JSON.parse(localStorage.getItem('litcrack_roadmap_progress') || '{}');
+      // Sync to server
+      await window.syncStudentProgressToServer({ roadmapProgress: savedProgress });
+
+      window.showAppToast("Career Profile saved and synced successfully!");
     });
   }
 
