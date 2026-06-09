@@ -701,6 +701,9 @@ body::before {
 }
 
 .form-control {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background: rgba(2, 2, 3, 0.6);
   border: 1px solid var(--border-light);
   border-radius: 12px;
@@ -1529,6 +1532,10 @@ select.form-control {
 @media (max-width: 768px) {
   #app-container {
     padding: 16px;
+    width: 100%;
+    max-width: 100%;
+    flex-direction: column;
+    overflow-x: hidden;
   }
 
   .hamburger-btn {
@@ -1555,6 +1562,9 @@ select.form-control {
 
   .main-wrapper {
     margin-left: 0;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .top-header {
