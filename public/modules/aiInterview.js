@@ -393,7 +393,7 @@ Return your response in strict, valid JSON format matching this schema, with no 
 
     // What you said vs Suggested phrasing
     textSaid.innerText = `"${userAnswer}"`;
-    textSuggested.innerText = q.phrasingFix.good;
+    textSuggested.innerText = q.goodPhrasing || "No phrasing suggestion available.";
     triggerScorecardUpdateNotify();
   }
 

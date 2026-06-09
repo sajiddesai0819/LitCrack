@@ -269,6 +269,9 @@
           <div class="header-badge">
             <i class="fa-solid fa-graduation-cap" style="margin-right: 0.25rem;"></i> KLECET Chikodi
           </div>
+          <div class="header-profile-btn" id="header-profile-shortcut" onclick="window.switchView('student-profile')" style="cursor: pointer; display: flex; align-items: center; gap: 0.65rem;" title="Go to Profile">
+            <div class="header-avatar" id="header-avatar-initials">LC</div>
+          </div>
         </div>
       </header>
 
@@ -1148,92 +1151,109 @@
             </div>
 
             <!-- Right Column: Settings Form -->
+            <!-- Right Column: Settings Form -->
             <div class="glass-card">
-              <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-user-gear" style="color: var(--primary); margin-right: 0.5rem;"></i>Profile Settings</h3>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem; border-bottom: 1px solid var(--border-light); padding-bottom: 1rem;">
+                <h3 style="margin: 0;"><i class="fa-solid fa-user-gear" style="color: var(--primary); margin-right: 0.5rem;"></i>Profile Settings</h3>
+                <div class="settings-tabs-header" id="profile-settings-tabs" style="display: flex; gap: 0.25rem; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 10px; border: 1px solid var(--border-light);">
+                  <button class="settings-tab-btn active" data-tab="details" style="background: none; border: none; font-family: var(--font-display); font-weight: 700; font-size: 0.78rem; padding: 0.5rem 0.85rem; border-radius: 8px; cursor: pointer; color: var(--text-muted); transition: var(--transition-fast);"><i class="fa-solid fa-id-card"></i> Personal</button>
+                  <button class="settings-tab-btn" data-tab="academic" style="background: none; border: none; font-family: var(--font-display); font-weight: 700; font-size: 0.78rem; padding: 0.5rem 0.85rem; border-radius: 8px; cursor: pointer; color: var(--text-muted); transition: var(--transition-fast);"><i class="fa-solid fa-graduation-cap"></i> Academics</button>
+                  <button class="settings-tab-btn" data-tab="social" style="background: none; border: none; font-family: var(--font-display); font-weight: 700; font-size: 0.78rem; padding: 0.5rem 0.85rem; border-radius: 8px; cursor: pointer; color: var(--text-muted); transition: var(--transition-fast);"><i class="fa-solid fa-globe"></i> Skills & Links</button>
+                </div>
+              </div>
               
               <div style="display: flex; flex-direction: column; gap: 1.25rem;">
-                <!-- Avatar Color selector -->
-                <div class="form-group" style="margin-bottom: 0;">
-                  <label>Avatar Visual Theme</label>
-                  <div class="avatar-theme-selector-grid" id="avatar-theme-selector-grid">
-                    <div class="avatar-theme-dot avatar-theme-amethyst active" data-theme="amethyst" title="Royal Amethyst"></div>
-                    <div class="avatar-theme-dot avatar-theme-emerald" data-theme="emerald" title="Cyber Emerald"></div>
-                    <div class="avatar-theme-dot avatar-theme-gold" data-theme="gold" title="Amber Gold"></div>
-                    <div class="avatar-theme-dot avatar-theme-rose" data-theme="rose" title="Coral Rose"></div>
+                <!-- Group 1: Personal Details -->
+                <div id="settings-group-details" class="settings-group-panel" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                  <!-- Avatar Color selector -->
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label>Avatar Visual Theme</label>
+                    <div class="avatar-theme-selector-grid" id="avatar-theme-selector-grid">
+                      <div class="avatar-theme-dot avatar-theme-amethyst active" data-theme="amethyst" title="Royal Amethyst"></div>
+                      <div class="avatar-theme-dot avatar-theme-emerald" data-theme="emerald" title="Cyber Emerald"></div>
+                      <div class="avatar-theme-dot avatar-theme-gold" data-theme="gold" title="Amber Gold"></div>
+                      <div class="avatar-theme-dot avatar-theme-rose" data-theme="rose" title="Coral Rose"></div>
+                    </div>
+                  </div>
+
+                  <div class="grid-2" style="gap: 1rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="profile-input-name">Full Name</label>
+                      <input type="text" id="profile-input-name" class="form-control" placeholder="e.g. Sajid Desai">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="profile-input-phone">Phone Number</label>
+                      <input type="text" id="profile-input-phone" class="form-control" placeholder="e.g. +91 98765 43210">
+                    </div>
+                  </div>
+
+                  <div class="grid-2" style="gap: 1rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="profile-input-branch">Department / Branch</label>
+                      <select id="profile-input-branch" class="form-control">
+                        <option value="Computer Science">Computer Science & Eng</option>
+                        <option value="Information Science">Information Science & Eng</option>
+                        <option value="Electronics & Communication">Electronics & Comm Eng</option>
+                        <option value="Mechanical Engineering">Mechanical Eng</option>
+                        <option value="Civil Engineering">Civil Eng</option>
+                      </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="profile-input-email">Email Address</label>
+                      <input type="email" id="profile-input-email" class="form-control" readonly>
+                    </div>
                   </div>
                 </div>
 
-                <div class="grid-2" style="gap: 1rem;">
-                  <div class="form-group" style="margin-bottom: 0;">
-                    <label for="profile-input-name">Full Name</label>
-                    <input type="text" id="profile-input-name" class="form-control" placeholder="e.g. Sajid Desai">
+                <!-- Group 2: Academics -->
+                <div id="settings-group-academic" class="settings-group-panel" style="display: none; flex-direction: column; gap: 1.25rem;">
+                  <div class="grid-2" style="gap: 1rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="profile-input-usn">USN (Seat Number)</label>
+                      <input type="text" id="profile-input-usn" class="form-control" readonly>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="profile-input-grad">Graduation Year</label>
+                      <input type="number" id="profile-input-grad" class="form-control" placeholder="e.g. 2027" min="2020" max="2035">
+                    </div>
                   </div>
-                  <div class="form-group" style="margin-bottom: 0;">
-                    <label for="profile-input-usn">USN (Seat Number)</label>
-                    <input type="text" id="profile-input-usn" class="form-control" readonly>
+
+                  <div class="grid-2" style="gap: 1rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="profile-input-cgpa">Current CGPA</label>
+                      <input type="number" id="profile-input-cgpa" class="form-control" placeholder="e.g. 9.15" step="0.01" min="0" max="10">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="profile-input-role">Target Job Role</label>
+                      <input type="text" id="profile-input-role" class="form-control" placeholder="e.g. Fullstack Web Developer">
+                    </div>
                   </div>
                 </div>
 
-                <div class="grid-2" style="gap: 1rem;">
+                <!-- Group 3: Social & Skills -->
+                <div id="settings-group-social" class="settings-group-panel" style="display: none; flex-direction: column; gap: 1.25rem;">
                   <div class="form-group" style="margin-bottom: 0;">
-                    <label for="profile-input-branch">Department / Branch</label>
-                    <select id="profile-input-branch" class="form-control">
-                      <option value="Computer Science">Computer Science & Eng</option>
-                      <option value="Information Science">Information Science & Eng</option>
-                      <option value="Electronics & Communication">Electronics & Comm Eng</option>
-                      <option value="Mechanical Engineering">Mechanical Eng</option>
-                      <option value="Civil Engineering">Civil Eng</option>
-                    </select>
+                    <label for="profile-input-skills">Tech Stack / Key Skills (Comma separated)</label>
+                    <input type="text" id="profile-input-skills" class="form-control" placeholder="e.g. JavaScript, Python, SQL, React, Node.js">
+                    <div class="skills-tags-container" id="profile-skills-tags">
+                      <!-- Rendered dynamically -->
+                    </div>
                   </div>
-                  <div class="form-group" style="margin-bottom: 0;">
-                    <label for="profile-input-email">Email Address</label>
-                    <input type="email" id="profile-input-email" class="form-control" readonly>
-                  </div>
-                </div>
 
-                <div class="grid-2" style="gap: 1rem;">
                   <div class="form-group" style="margin-bottom: 0;">
-                    <label for="profile-input-phone">Phone Number</label>
-                    <input type="text" id="profile-input-phone" class="form-control" placeholder="e.g. +91 98765 43210">
+                    <label for="profile-input-bio">Personal Biography / Elevator Pitch</label>
+                    <textarea id="profile-input-bio" class="form-control" placeholder="Brief pitch describing your technical focus and goals..." rows="3"></textarea>
                   </div>
-                  <div class="form-group" style="margin-bottom: 0;">
-                    <label for="profile-input-grad">Graduation Year</label>
-                    <input type="number" id="profile-input-grad" class="form-control" placeholder="e.g. 2027" min="2020" max="2035">
-                  </div>
-                </div>
 
-                <div class="grid-2" style="gap: 1rem;">
-                  <div class="form-group" style="margin-bottom: 0;">
-                    <label for="profile-input-cgpa">Current CGPA</label>
-                    <input type="number" id="profile-input-cgpa" class="form-control" placeholder="e.g. 9.15" step="0.01" min="0" max="10">
-                  </div>
-                  <div class="form-group" style="margin-bottom: 0;">
-                    <label for="profile-input-role">Target Job Role</label>
-                    <input type="text" id="profile-input-role" class="form-control" placeholder="e.g. Fullstack Web Developer">
-                  </div>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 0;">
-                  <label for="profile-input-skills">Tech Stack / Key Skills (Comma separated)</label>
-                  <input type="text" id="profile-input-skills" class="form-control" placeholder="e.g. JavaScript, Python, SQL, React, Node.js">
-                  <div class="skills-tags-container" id="profile-skills-tags">
-                    <!-- Rendered dynamically -->
-                  </div>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 0;">
-                  <label for="profile-input-bio">Personal Biography / Elevator Pitch</label>
-                  <textarea id="profile-input-bio" class="form-control" placeholder="Brief pitch describing your technical focus and goals..." rows="3"></textarea>
-                </div>
-
-                <div class="grid-2" style="gap: 1rem;">
-                  <div class="form-group" style="margin-bottom: 0;">
-                    <label for="profile-input-linkedin">LinkedIn Profile URL</label>
-                    <input type="url" id="profile-input-linkedin" class="form-control" placeholder="https://linkedin.com/in/username">
-                  </div>
-                  <div class="form-group" style="margin-bottom: 0;">
-                    <label for="profile-input-github">GitHub Profile URL</label>
-                    <input type="url" id="profile-input-github" class="form-control" placeholder="https://github.com/username">
+                  <div class="grid-2" style="gap: 1rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="profile-input-linkedin">LinkedIn Profile URL</label>
+                      <input type="url" id="profile-input-linkedin" class="form-control" placeholder="https://linkedin.com/in/username">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="profile-input-github">GitHub Profile URL</label>
+                      <input type="url" id="profile-input-github" class="form-control" placeholder="https://github.com/username">
+                    </div>
                   </div>
                 </div>
 

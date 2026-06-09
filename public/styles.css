@@ -2812,6 +2812,113 @@ select.form-control {
   }
 }
 
+/* ==========================================================================
+   ENHANCED HEADER & PROFILE STYLES
+   ========================================================================== */
+
+/* Top Header Profile Shortcut Button */
+.header-profile-btn {
+  display: flex;
+  align-items: center;
+  transition: var(--transition-normal);
+}
+
+.header-profile-btn:hover .header-avatar {
+  transform: scale(1.08);
+  box-shadow: 0 0 15px var(--primary-glow);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.header-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: var(--transition-fast);
+}
+
+/* Settings Tabs Style */
+.settings-tab-btn {
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.78rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 8px;
+  cursor: pointer;
+  background: none;
+  transition: var(--transition-fast);
+}
+
+.settings-tab-btn:hover {
+  color: #fff !important;
+}
+
+.settings-tab-btn.active {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(244, 63, 94, 0.05)) !important;
+  border: 1px solid rgba(168, 85, 247, 0.25) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 10px rgba(168, 85, 247, 0.1);
+}
+
+/* Profile Preview Card Dynamic Visual Theme Glowing Outlines */
+.profile-preview-card.theme-amethyst {
+  border-color: rgba(168, 85, 247, 0.2) !important;
+  box-shadow: 
+    0 20px 45px rgba(0, 0, 0, 0.85),
+    0 0 25px rgba(168, 85, 247, 0.1),
+    inset 0 1px 1px rgba(255, 255, 255, 0.03) !important;
+}
+.profile-preview-card.theme-emerald {
+  border-color: rgba(16, 185, 129, 0.2) !important;
+  box-shadow: 
+    0 20px 45px rgba(0, 0, 0, 0.85),
+    0 0 25px rgba(16, 185, 129, 0.1),
+    inset 0 1px 1px rgba(255, 255, 255, 0.03) !important;
+}
+.profile-preview-card.theme-gold {
+  border-color: rgba(245, 158, 11, 0.2) !important;
+  box-shadow: 
+    0 20px 45px rgba(0, 0, 0, 0.85),
+    0 0 25px rgba(245, 158, 11, 0.08),
+    inset 0 1px 1px rgba(255, 255, 255, 0.03) !important;
+}
+.profile-preview-card.theme-rose {
+  border-color: rgba(244, 63, 94, 0.2) !important;
+  box-shadow: 
+    0 20px 45px rgba(0, 0, 0, 0.85),
+    0 0 25px rgba(244, 63, 94, 0.1),
+    inset 0 1px 1px rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Responsive Grid Adjustments for Tablet and Mobile */
+@media (max-width: 1024px) {
+  .grid-main {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .grid-3 {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem;
+  }
+  .grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem;
+  }
+}
+
 
 
 

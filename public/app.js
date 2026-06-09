@@ -380,8 +380,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (aiLink) aiLink.style.display = 'none';
       if (profileLink) profileLink.style.display = 'none';
       if (adminCreateLobby) adminCreateLobby.style.display = 'block';
+      const headerProfileShortcut = document.getElementById('header-profile-shortcut');
+      if (headerProfileShortcut) headerProfileShortcut.style.display = 'none';
       window.switchView('admin-deck');
     } else {
+      const headerProfileShortcut = document.getElementById('header-profile-shortcut');
+      if (headerProfileShortcut) headerProfileShortcut.style.display = 'flex';
       navRole.innerText = `${currentUser.branch} - ${currentUser.usn}`;
       if (adminLink) adminLink.style.display = 'none';
       if (roadmapLink) roadmapLink.style.display = 'block';
@@ -2416,6 +2420,11 @@ document.addEventListener('DOMContentLoaded', () => {
       navAvatar.classList.remove('avatar-theme-amethyst', 'avatar-theme-emerald', 'avatar-theme-gold', 'avatar-theme-rose');
       navAvatar.classList.add(`avatar-theme-${profile.theme || 'amethyst'}`);
     }
+    const headerAvatar = document.getElementById('header-avatar-initials');
+    if (headerAvatar) {
+      headerAvatar.innerText = (profile.name || currentUser.name || "LC").split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+      headerAvatar.className = `header-avatar avatar-theme-${profile.theme || 'amethyst'}`;
+    }
   }
 
   function renderStudentProfile() {
@@ -2521,6 +2530,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const linkLinkedin = document.getElementById('profile-link-linkedin');
     const linkGithub = document.getElementById('profile-link-github');
     const previewBio = document.getElementById('profile-preview-bio');
+
+    const previewCard = document.querySelector('.profile-preview-card');
+    if (previewCard) {
+      previewCard.className = `glass-card profile-preview-card theme-${profile.theme || 'amethyst'}`;
+    }
 
     if (previewAvatar) {
       previewAvatar.innerText = (profile.name || currentUser.name || "LC").split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
@@ -2641,6 +2655,37 @@ document.addEventListener('DOMContentLoaded', () => {
       const previewAvatar = document.getElementById('profile-preview-avatar');
       if (previewAvatar) {
         previewAvatar.className = `profile-avatar-large avatar-theme-${selectedTheme}`;
+      }
+
+      // Update preview card border immediately
+      const previewCard = document.querySelector('.profile-preview-card');
+      if (previewCard) {
+        previewCard.className = `glass-card profile-preview-card theme-${selectedTheme}`;
+      }
+    });
+  }
+
+  // Settings Tab Switching Event Listener
+  const settingsTabContainer = document.getElementById('profile-settings-tabs');
+  if (settingsTabContainer) {
+    settingsTabContainer.addEventListener('click', (e) => {
+      const btn = e.target.closest('.settings-tab-btn');
+      if (!btn) return;
+
+      // Reset active tabs
+      document.querySelectorAll('.settings-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const targetTab = btn.getAttribute('data-tab');
+
+      // Toggle display of settings panels
+      document.querySelectorAll('.settings-group-panel').forEach(panel => {
+        panel.style.display = 'none';
+      });
+
+      const activePanel = document.getElementById(`settings-group-${targetTab}`);
+      if (activePanel) {
+        activePanel.style.display = 'flex';
       }
     });
   }
