@@ -7,7 +7,7 @@
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Core Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=1.0.4">
+  <link rel="stylesheet" href="styles.css?v=1.0.5">
   <!-- jsPDF and html2canvas Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -967,8 +967,8 @@
           </div>
 
           <!-- Configuration Panel -->
-          <div class="glass-card" id="interview-config-panel" style="max-width: 600px; margin: 0 auto;">
-            <h3 style="margin-bottom: 1.5rem; text-align: center;">Select Interview Profile</h3>
+          <div class="glass-card glow-indigo" id="interview-config-panel" style="max-width: 520px; margin: 1.5rem auto; width: 100%;">
+            <h3 style="margin-bottom: 1.5rem; text-align: center;"><i class="fa-solid fa-user-tie" style="color: var(--primary); margin-right: 0.5rem;"></i>Select Interview Profile</h3>
             <div class="form-group">
               <label for="interview-type">Interview Focus</label>
               <select id="interview-type" class="form-control">
@@ -988,7 +988,7 @@
               <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem;">Leave blank for local simulated AI. Stored securely in your browser's LocalStorage.</span>
             </div>
 
-            <button class="btn btn-primary" id="btn-start-interview" style="width: 100%; margin-top: 1rem;">Launch Simulation</button>
+            <button class="btn btn-primary" id="btn-start-interview" style="width: 100%; margin-top: 1rem;"><i class="fa-solid fa-play" style="margin-right: 0.5rem;"></i>Launch Simulation</button>
           </div>
 
           <!-- Interview Room Panel -->
@@ -1585,9 +1585,9 @@
   <!-- Load socket.io client dynamically (handled via Node) -->
   <script src="/socket.io/socket.io.js"></script>
   <!-- Load Client JavaScript scripts -->
-  <script src="modules/certificate.js?v=1.0.4"></script>
-  <script src="modules/liveTest.js?v=1.0.4"></script>
-  <script src="modules/aiInterview.js?v=1.0.4"></script>
-  <script src="app.js?v=1.0.4"></script>
+  <script src="modules/certificate.js?v=1.0.5"></script>
+  <script src="modules/liveTest.js?v=1.0.5"></script>
+  <script src="modules/aiInterview.js?v=1.0.5"></script>
+  <script src="app.js?v=1.0.5"></script>
 </body>
 </html>
