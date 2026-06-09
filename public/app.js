@@ -137,14 +137,63 @@ document.addEventListener('DOMContentLoaded', () => {
   // SESSION AUTHENTICATION FLOWS
   // ==========================================================================
 
+  // JS-driven count-up stats counter logic
+  function runLandingStatsCounter() {
+    const stats = [
+      { id: 'landing-stat-questions', target: 1250 },
+      { id: 'landing-stat-roadmap', target: 15 },
+      { id: 'landing-stat-interviews', target: 100 },
+      { id: 'landing-stat-pass', target: 100 }
+    ];
+
+    stats.forEach(stat => {
+      const el = document.getElementById(stat.id);
+      if (!el) return;
+
+      let current = 0;
+      const duration = 1500; // 1.5 seconds
+      const steps = 60;
+      const stepTime = duration / steps;
+      const increment = stat.target / steps;
+
+      el.innerText = '0';
+
+      const interval = setInterval(() => {
+        current += increment;
+        if (current >= stat.target) {
+          el.innerText = stat.target + (stat.id === 'landing-stat-questions' || stat.id === 'landing-stat-interviews' ? '+' : (stat.id === 'landing-stat-pass' ? '%' : ''));
+          clearInterval(interval);
+        } else {
+          el.innerText = Math.floor(current) + (stat.id === 'landing-stat-questions' || stat.id === 'landing-stat-interviews' ? '+' : (stat.id === 'landing-stat-pass' ? '%' : ''));
+        }
+      }, stepTime);
+    });
+  }
+
   // Check existing session
   function checkSession() {
     const saved = localStorage.getItem('litcrack_user');
+    const landingPage = document.getElementById('landing-page');
+    const btnLandingBegin = document.getElementById('btn-landing-begin');
+
+    if (btnLandingBegin) {
+      btnLandingBegin.addEventListener('click', () => {
+        authOverlay.style.display = 'flex';
+      });
+    }
+
     if (saved) {
       currentUser = JSON.parse(saved);
       applyUserSession();
+      if (landingPage) landingPage.style.display = 'none';
     } else {
-      authOverlay.style.display = 'flex';
+      if (landingPage) {
+        landingPage.style.display = 'flex';
+        authOverlay.style.display = 'none';
+        runLandingStatsCounter();
+      } else {
+        authOverlay.style.display = 'flex';
+      }
     }
   }
 
@@ -338,6 +387,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Apply user role view layout
   function applyUserSession() {
     authOverlay.style.display = 'none';
+    const landingPage = document.getElementById('landing-page');
+    if (landingPage) landingPage.style.display = 'none';
     
     // Clear forms
     inputLoginEmail.value = '';
@@ -460,7 +511,14 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem('litcrack_star_saved');
         localStorage.removeItem('litcrack_gd_count');
         currentUser = null;
-        authOverlay.style.display = 'flex';
+        const landingPage = document.getElementById('landing-page');
+        if (landingPage) {
+          landingPage.style.display = 'flex';
+          authOverlay.style.display = 'none';
+          runLandingStatsCounter();
+        } else {
+          authOverlay.style.display = 'flex';
+        }
         window.switchView('dashboard');
       }
     });

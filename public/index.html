@@ -19,7 +19,7 @@
   <div class="blur-blob blob-purple"></div>
 
   <!-- Authentication Screen Glass Overlay -->
-  <div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(2, 2, 3, 0.95); backdrop-filter: blur(24px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px;">
+  <div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(2, 2, 3, 0.95); backdrop-filter: blur(24px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 16px;">
     <div class="glass-card glow-indigo" style="width: 100%; max-width: 480px; animation: scaleUp 0.45s var(--ease-out-expo); box-shadow: 0 30px 70px rgba(0,0,0,0.8);">
       
       <!-- Brand Logo Header -->
@@ -128,6 +128,136 @@
 
   <!-- Overlay for Mobile Sidebar Drawer -->
   <div id="sidebar-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 95;"></div>
+
+  <!-- Premium Animated Landing Page Wrapper -->
+  <div id="landing-page" style="display: none;">
+    <!-- Landing Header -->
+    <header class="landing-header">
+      <div class="landing-brand">
+        <div class="logo-icon" style="width: 38px; height: 38px; margin: 0;">
+          <svg class="litcrack-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <polygon class="logo-ring-outer" points="50,6 88,28 88,72 50,94 12,72 12,28" fill="none" stroke="#9d59f7" stroke-width="2.5" stroke-linejoin="round" opacity="0.3" />
+            <path class="logo-quill" d="M35,78 C42,62 58,40 70,22" fill="none" stroke="#9d59f7" stroke-width="4.5" stroke-linecap="round" />
+            <path class="logo-lightning" d="M62,18 L34,54 L50,54 L36,86 L68,46 L50,46 Z" fill="#06b6d4" />
+          </svg>
+        </div>
+        <span class="landing-logo-text">LitCrack</span>
+      </div>
+      <div class="landing-header-badge">
+        <i class="fa-solid fa-graduation-cap" style="margin-right: 0.25rem;"></i> KLECET Chikodi
+      </div>
+    </header>
+
+    <!-- Landing Body -->
+    <div class="landing-body-content">
+      <!-- Hero Section -->
+      <section class="landing-hero fade-slide-up" style="animation-delay: 0.1s;">
+        <span class="landing-hero-tag">Official Placement Preparation Portal</span>
+        <h1>Crack Your <span class="gradient-text">Campus Placements</span> with Confidence</h1>
+        <p>LitCrack is custom-engineered by the KLECET Literary Club (Tech Wing) to prepare students for core technical recruitments, logical tests, and verbal interviews. Master technical logic, structure behavioral answers, and practice voice mock interviews live.</p>
+        
+        <button class="btn btn-primary btn-landing-cta" id="btn-landing-begin">
+          Let's Begin <i class="fa-solid fa-arrow-right-to-bracket" style="margin-left: 0.25rem;"></i>
+        </button>
+      </section>
+
+      <!-- Stats Section -->
+      <section class="landing-stats fade-slide-up" style="animation-delay: 0.3s;">
+        <div class="stat-card">
+          <div class="stat-num" id="landing-stat-questions" data-target="1250">0</div>
+          <div class="stat-lbl">Aptitude Questions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="landing-stat-roadmap" data-target="15">0</div>
+          <div class="stat-lbl">Roadmap Checkpoints</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="landing-stat-interviews" data-target="100">0</div>
+          <div class="stat-lbl">AI Mock Interviews</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="landing-stat-pass" data-target="100">0</div>
+          <div class="stat-lbl">% KLECET Focus</div>
+        </div>
+      </section>
+
+      <!-- Features Section -->
+      <section class="landing-features fade-slide-up" style="animation-delay: 0.5s;">
+        <div class="landing-section-title">
+          <h2>Core Placement Training Features</h2>
+          <p>Four modules engineered to refine both coding logic and verbal expression.</p>
+        </div>
+
+        <div class="landing-features-grid">
+          <!-- Card 1 -->
+          <div class="glass-card landing-card glow-indigo">
+            <div class="landing-card-icon-wrapper" style="background: rgba(244, 63, 94, 0.12); color: var(--danger);">
+              <i class="fa-solid fa-microphone-lines"></i>
+            </div>
+            <h3>AI Mock Interviewer</h3>
+            <p>Dictate answers to structured HR & Technical questions. Get instant scorecards grading verbal accuracy, concept depth, and alternative literary phrasings using Google Gemini.</p>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="glass-card landing-card glow-cyan">
+            <div class="landing-card-icon-wrapper" style="background: rgba(16, 185, 129, 0.12); color: var(--secondary);">
+              <i class="fa-solid fa-comments"></i>
+            </div>
+            <h3>GD Simulator</h3>
+            <p>Hone your group discussion fluency. Practice using transitions, professional agreements, and logic blocks under live timer pressure to build vocabulary confidence.</p>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="glass-card landing-card glow-indigo">
+            <div class="landing-card-icon-wrapper" style="background: rgba(168, 85, 247, 0.12); color: var(--primary);">
+              <i class="fa-solid fa-star"></i>
+            </div>
+            <h3>STAR Answer Builder</h3>
+            <p>Structure your responses for behavioral rounds. Write, analyze, and compile answers using the Situation, Task, Action, and Result (STAR) framework with interactive guides.</p>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="glass-card landing-card glow-cyan">
+            <div class="landing-card-icon-wrapper" style="background: rgba(245, 158, 11, 0.12); color: var(--accent-gold);">
+              <i class="fa-solid fa-trophy"></i>
+            </div>
+            <h3>Practice Quiz Arena</h3>
+            <p>Test your logical, quantitative, and verbal aptitude. Compete in live test lobbies with peers and auto-generate certified merit certificates for your placement portfolio.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Advisor Section -->
+      <section class="landing-advisors fade-slide-up" style="animation-delay: 0.7s;">
+        <div class="landing-section-title">
+          <h2>Advisory Council</h2>
+          <p>KLE College of Engineering & Technology (KLECET), Chikodi campus leadership.</p>
+        </div>
+        <div class="landing-advisors-grid">
+          <div class="advisor-card">
+            <div class="advisor-avatar"><i class="fa-solid fa-user-tie"></i></div>
+            <h4>Dr. D. D. Billur</h4>
+            <p>Principal, KLECET</p>
+          </div>
+          <div class="advisor-card">
+            <div class="advisor-avatar"><i class="fa-solid fa-user-tie"></i></div>
+            <h4>Dr. Sandeep K.</h4>
+            <p>Dean - Placement & Training</p>
+          </div>
+          <div class="advisor-card">
+            <div class="advisor-avatar"><i class="fa-solid fa-user-tie"></i></div>
+            <h4>Prof. Anita Patil</h4>
+            <p>Literary Club Coordinator</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Landing Footer -->
+    <footer class="landing-footer">
+      <p>&copy; 2026 KLECET Literary Club. Portal Architect: Sajid Desai</p>
+    </footer>
+  </div>
 
   <div id="app-container">
     
