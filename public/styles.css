@@ -2917,6 +2917,87 @@ select.form-control {
     grid-template-columns: 1fr !important;
     gap: 1.25rem;
   }
+  .glass-card {
+    padding: 1.25rem !important;
+    border-radius: 16px !important;
+  }
+  .section-header {
+    margin-bottom: 1.5rem !important;
+  }
+  .section-header h2 {
+    font-size: 1.85rem !important;
+  }
+  .interview-chat {
+    height: 260px !important;
+  }
+}
+
+/* Mobile specific styling for voice visualizer & buttons */
+@media (max-width: 576px) {
+  .voice-visualizer-container {
+    padding: 1rem !important;
+    margin-top: 1rem !important;
+    gap: 0.75rem !important;
+  }
+  .soundwave-box {
+    height: 40px !important;
+  }
+  .soundwave-bar {
+    width: 4px !important;
+  }
+  
+  .interview-buttons-container {
+    display: flex !important;
+    gap: 0.5rem !important;
+    margin-top: 1rem !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+  }
+  
+  #btn-mic-toggle {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+  }
+  
+  #btn-mic-toggle #mic-btn-text {
+    display: none !important;
+  }
+  
+  #btn-submit-answer {
+    flex-grow: 1 !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 0.9rem !important;
+    height: 48px !important;
+    margin: 0 !important;
+  }
+  
+  #btn-end-interview {
+    width: 100% !important;
+    margin-top: 0.5rem !important;
+    padding: 0.65rem 1rem !important;
+    font-size: 0.85rem !important;
+    margin-left: 0 !important;
+  }
+}
+
+/* Pulsating animation for microphone during active recording */
+#btn-mic-toggle.recording {
+  background: var(--danger) !important;
+  border-color: var(--danger) !important;
+  color: #fff !important;
+  box-shadow: 0 0 15px var(--accent-rose-glow) !important;
+  animation: micPulse 1.5s infinite alternate ease-in-out !important;
+}
+
+@keyframes micPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.1); }
 }
 
 

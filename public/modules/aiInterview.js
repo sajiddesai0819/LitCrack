@@ -81,6 +81,7 @@
     speechRecognition.onstart = () => {
       isListening = true;
       waveBox.classList.add('listening');
+      if (btnMic) btnMic.classList.add('recording');
       micBtnText.innerText = "Stop Recording";
       labelMicStatus.innerText = "Listening... Speak clearly into your mic.";
     };
@@ -104,6 +105,7 @@
   function stopListening() {
     isListening = false;
     waveBox.classList.remove('listening');
+    if (btnMic) btnMic.classList.remove('recording');
     micBtnText.innerText = "Start Microphone";
     labelMicStatus.innerText = "Microphone is inactive.";
     if (speechRecognition) {
