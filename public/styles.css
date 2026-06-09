@@ -2919,6 +2919,9 @@ select.form-control {
 }
 
 @media (max-width: 768px) {
+  .form-control {
+    font-size: 16px !important;
+  }
   .grid-3 {
     grid-template-columns: 1fr !important;
     gap: 1.25rem;

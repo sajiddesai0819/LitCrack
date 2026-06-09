@@ -3,6 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const { Pool } = require('pg');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const server = http.createServer(app);
@@ -25,6 +26,113 @@ const pool = new Pool({
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
   connectionTimeoutMillis: 1000
 });
+
+// Nodemailer SMTP Transporter setup
+const emailUser = process.env.EMAIL_USER;
+const emailPass = process.env.EMAIL_PASS;
+const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+const emailFrom = process.env.EMAIL_FROM || 'KLECET LitCrack <admin@klecet.edu.in>';
+
+let transporter;
+
+if (emailUser && emailPass) {
+  transporter = nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpPort === 465,
+    auth: {
+      user: emailUser,
+      pass: emailPass
+    }
+  });
+  console.log(`[SMTP EMAIL SYSTEM] Configured with host: ${smtpHost}:${smtpPort}, user: ${emailUser}`);
+} else {
+  transporter = {
+    sendMail: async (mailOptions) => {
+      console.log(`\n============================================================`);
+      console.log(`[SMTP EMAIL SYSTEM] SIMULATING EMAIL SENT:`);
+      console.log(`From: ${mailOptions.from}`);
+      console.log(`To: ${mailOptions.to}`);
+      console.log(`Subject: ${mailOptions.subject}`);
+      console.log(`Body:\n------------------------------------------------------------\n${mailOptions.text || mailOptions.html}\n------------------------------------------------------------`);
+      console.log(`============================================================\n`);
+      return { messageId: 'simulated-id-' + Date.now() };
+    }
+  };
+  console.warn(`[SMTP EMAIL SYSTEM] Warning: EMAIL_USER and EMAIL_PASS environment variables are not set. Emails will be simulated in the console logs.`);
+}
+
+// Helper to send broadcast email to all registered students
+async function sendBroadcastEmail(subject, text, html) {
+  try {
+    let emails = [];
+    if (useLocalDb) {
+      const db = readLocalDb();
+      emails = (db.students || []).map(s => s.email).filter(Boolean);
+    } else {
+      const result = await pool.query("SELECT email FROM students");
+      emails = result.rows.map(r => r.email).filter(Boolean);
+    }
+
+    if (emails.length === 0) {
+      console.log("[SMTP EMAIL SYSTEM] No students registered. Skipping email broadcast.");
+      return;
+    }
+
+    const mailOptions = {
+      from: emailFrom,
+      to: emails.join(', '),
+      subject: subject,
+      text: text,
+      html: html
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[SMTP EMAIL SYSTEM] Broadcast email successfully dispatched. Message ID: ${info.messageId}`);
+  } catch (err) {
+    console.error("[SMTP EMAIL SYSTEM] Failed to send broadcast email:", err);
+  }
+}
+
+// Helper to send individual congratulatory email
+async function sendCongratulationsEmail(recipientEmail, studentName, achievementDetails) {
+  try {
+    const subject = `🏆 Congratulations ${studentName}! High Score Achievement on LitCrack`;
+    const text = `Hi ${studentName},\n\nCongratulations on your outstanding performance on LitCrack! You achieved: ${achievementDetails}.\n\nKeep up the excellent preparation for your IT placement rounds. KLECET is proud of you!\n\nBest regards,\nKLECET Literary & Coding Cell`;
+    
+    const html = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 2rem; background: #fafafa; color: #1e293b;">
+        <h2 style="color: #4f46e5; margin-top: 0; font-size: 24px;">🏆 Placement Prep Excellence!</h2>
+        <p>Dear <strong>${studentName}</strong>,</p>
+        <p>Congratulations on your outstanding performance on the **LitCrack Placement Prep Portal**!</p>
+        <div style="background: #eef2ff; border-left: 4px solid #4f46e5; padding: 1rem; margin: 1.5rem 0; border-radius: 0 8px 8px 0; font-size: 16px;">
+          <strong>Achievement Details:</strong><br/>
+          ${achievementDetails}
+        </div>
+        <p>Your preparation is showing great results. Keep mastering both technical structures and communication expressions to crack your target placement offers!</p>
+        <p style="margin-top: 2rem; border-top: 1px solid #e2e8f0; padding-top: 1rem; font-size: 14px; color: #64748b;">
+          Best regards,<br/>
+          <strong>KLECET Training & Placement Wing</strong><br/>
+          Literary & Coding Club (Tech Wing)
+        </p>
+      </div>
+    `;
+
+    const mailOptions = {
+      from: emailFrom,
+      to: recipientEmail,
+      subject: subject,
+      text: text,
+      html: html
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[SMTP EMAIL SYSTEM] Congratulations email successfully sent to ${recipientEmail}. Message ID: ${info.messageId}`);
+  } catch (err) {
+    console.error(`[SMTP EMAIL SYSTEM] Failed to send congratulations email to ${recipientEmail}:`, err);
+  }
+}
 
 let useLocalDb = false;
 
@@ -777,15 +885,22 @@ app.post('/api/admin/announcements', adminVerify, async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, $6);
     `, [newAnn.id, newAnn.date, newAnn.title, newAnn.tag, newAnn.message, newAnn.emailedCount]);
 
-    // Simulate Email Dispatching to Console
-    console.log(`\n============================================================`);
-    console.log(`[SMTP EMAIL BROADCAST SYSTEM] Dispatching announcement...`);
-    console.log(`Sender: KLECET Placement & Literary Wing <admin@klecet.edu.in>`);
-    console.log(`Subject: [LitCrack Announcement] ${title}`);
-    console.log(`Tag: [${tag}]`);
-    console.log(`Message Body:\n------------------------------------------------------------\n${message}\n------------------------------------------------------------`);
-    console.log(`Sending to ${emailedCount} registered students...`);
-    console.log(`============================================================\n`);
+    // Dispatch actual emails using Nodemailer SMTP
+    const emailSubject = `📣 [LitCrack Announcement] ${title}`;
+    const emailBodyText = `New KLECET Literary Club Announcement:\n\nTag: ${tag}\nDate: ${newAnn.date}\n\n${message}\n\nCheck the website portal for live details: https://litcrack.onrender.com`;
+    const emailBodyHtml = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 2rem; background: #ffffff; color: #1e293b;">
+        <h2 style="color: #9d59f7; margin-top: 0; font-size: 22px;">📣 New Portal Announcement</h2>
+        <span style="display: inline-block; background: #f3e8ff; color: #7c3aed; font-size: 12px; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; margin-bottom: 1.5rem;">${tag}</span>
+        <h3 style="margin: 0 0 1rem 0; font-size: 18px; color: #0f172a;">${title}</h3>
+        <p style="font-size: 15px; line-height: 1.6; color: #475569; white-space: pre-wrap;">${message}</p>
+        <p style="margin-top: 2rem; border-top: 1px solid #e2e8f0; padding-top: 1rem; font-size: 12px; color: #94a3b8;">
+          Date published: ${newAnn.date} | KLECET Literary & Coding Cell
+        </p>
+      </div>
+    `;
+
+    sendBroadcastEmail(emailSubject, emailBodyText, emailBodyHtml);
 
     res.json({ success: true, announcement: newAnn });
   } catch (err) {
@@ -1130,9 +1245,10 @@ io.on('connection', (socket) => {
 
     if (email) {
       try {
-        const studentRes = await pool.query("SELECT id, scores FROM students WHERE LOWER(email) = $1", [email.toLowerCase()]);
+        const studentRes = await pool.query("SELECT id, name, scores FROM students WHERE LOWER(email) = $1", [email.toLowerCase()]);
         if (studentRes.rows.length > 0) {
           const dbStudent = studentRes.rows[0];
+          const studentName = dbStudent.name || "Aspirant";
           const dbScores = dbStudent.scores || [];
           dbScores.push({
             score,
@@ -1144,6 +1260,13 @@ io.on('connection', (socket) => {
           });
           await pool.query("UPDATE students SET scores = $1 WHERE id = $2", [JSON.stringify(dbScores), dbStudent.id]);
           console.log(`Saved ${room.roomType} score ${score}% in database for ${email}`);
+
+          // Send congratulatory email if student scored >= 60%
+          if (score >= 60) {
+            const testTypeDesc = room.roomType === 'interview' ? 'Live Mock Interview Simulation' : 'Live Aptitude Test Lounge';
+            const achievementDetails = `Scored <strong>${score}%</strong> (${correctCount}/${room.questions.length} correct) in the <strong>${testTypeDesc}</strong>.`;
+            sendCongratulationsEmail(email.toLowerCase(), studentName, achievementDetails);
+          }
         }
       } catch (err) {
         console.error("Error saving student test score to Postgres:", err);
