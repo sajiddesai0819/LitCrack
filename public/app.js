@@ -709,9 +709,14 @@ document.addEventListener('DOMContentLoaded', () => {
               </td>
               <td>${f.role}</td>
               <td>
-                <button class="btn btn-outline" style="color: var(--danger); padding: 0.35rem 0.75rem; border-color: rgba(239, 68, 68, 0.2);" onclick="window.removeFacultyMember(${f.id})">
-                  <i class="fa-solid fa-trash"></i> Remove
-                </button>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                  <button class="btn btn-outline" style="color: var(--primary-bright); padding: 0.35rem 0.75rem; border-color: rgba(168, 85, 247, 0.2);" onclick="window.changeFacultyPicture(${f.id})">
+                    <i class="fa-solid fa-camera"></i> Change Pic
+                  </button>
+                  <button class="btn btn-outline" style="color: var(--danger); padding: 0.35rem 0.75rem; border-color: rgba(239, 68, 68, 0.2);" onclick="window.removeFacultyMember(${f.id})">
+                    <i class="fa-solid fa-trash"></i> Remove
+                  </button>
+                </div>
               </td>
             </tr>
           `).join('');
@@ -816,6 +821,53 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  // Change Faculty Picture (Admin) - exposed globally
+  window.changeFacultyPicture = (id) => {
+    const fileSelector = document.createElement('input');
+    fileSelector.type = 'file';
+    fileSelector.accept = 'image/*';
+    
+    fileSelector.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Image file size must be less than 2MB.");
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = async function(evt) {
+        const base64Str = evt.target.result;
+        try {
+          const res = await fetch('/api/admin/faculty/update-pic', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'admin-email': currentUser.email
+            },
+            body: JSON.stringify({ id, image: base64Str })
+          });
+          const data = await res.json();
+          if (data.success) {
+            loadAdminFacultiesRoster();
+            // Also refresh public about page roster if container exists
+            loadFacultiesRoster();
+            alert("Faculty picture updated successfully!");
+          } else {
+            alert(data.message || "Failed to update picture.");
+          }
+        } catch (err) {
+          console.error(err);
+          alert("Network error updating faculty picture.");
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    fileSelector.click();
   };
 
   // ==========================================================================

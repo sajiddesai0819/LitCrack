@@ -263,6 +263,19 @@ async function runLocalQuery(text, params) {
     return { rows: [newFac] };
   }
 
+  // UPDATE faculties SET image = $1 WHERE id = $2
+  if (textClean.startsWith("UPDATE faculties SET image = $1 WHERE id = $2")) {
+    const image = params[0];
+    const id = parseInt(params[1]);
+    const f = db.faculties.find(x => x.id === id);
+    if (f) {
+      f.image = image;
+      await writeLocalDb(db);
+      return { rows: [f] };
+    }
+    return { rows: [] };
+  }
+
   // DELETE FROM faculties WHERE id = $1
   if (textClean.startsWith("DELETE FROM faculties WHERE id = $1")) {
     const id = parseInt(params[0]);
@@ -833,6 +846,31 @@ app.post('/api/admin/faculty/add', adminVerify, async (req, res) => {
     res.json({ success: true, faculty: insertRes.rows[0] });
   } catch (err) {
     console.error("Error adding faculty:", err);
+    res.status(500).json({ success: false, message: "Database write error." });
+  }
+});
+
+// 5.5 Update Faculty Picture (Admin)
+app.post('/api/admin/faculty/update-pic', adminVerify, async (req, res) => {
+  const { id, image } = req.body;
+  if (!id || !image) {
+    return res.status(400).json({ success: false, message: "Faculty ID and image are required." });
+  }
+
+  try {
+    const updateRes = await pool.query(`
+      UPDATE faculties
+      SET image = $1
+      WHERE id = $2
+      RETURNING id, name, role, image;
+    `, [image, parseInt(id)]);
+
+    if (updateRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Faculty member not found." });
+    }
+    res.json({ success: true, message: "Faculty picture successfully updated." });
+  } catch (err) {
+    console.error("Error updating faculty picture:", err);
     res.status(500).json({ success: false, message: "Database write error." });
   }
 });
