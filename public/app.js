@@ -2474,15 +2474,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if (navName) navName.innerText = profile.name || currentUser.name || "Guest Student";
     if (navRole) navRole.innerText = profile.role || "KLECET Aspirant";
     if (navAvatar) {
-      navAvatar.innerText = (profile.name || currentUser.name || "LC").split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-      // Remove any existing theme classes
-      navAvatar.classList.remove('avatar-theme-amethyst', 'avatar-theme-emerald', 'avatar-theme-gold', 'avatar-theme-rose');
-      navAvatar.classList.add(`avatar-theme-${profile.theme || 'amethyst'}`);
+      if (profile.avatarImage) {
+        navAvatar.innerHTML = `<img src="${profile.avatarImage}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+        navAvatar.className = "nav-avatar";
+      } else {
+        navAvatar.innerText = (profile.name || currentUser.name || "LC").split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+        navAvatar.classList.remove('avatar-theme-amethyst', 'avatar-theme-emerald', 'avatar-theme-gold', 'avatar-theme-rose');
+        navAvatar.classList.add(`avatar-theme-${profile.theme || 'amethyst'}`);
+      }
     }
     const headerAvatar = document.getElementById('header-avatar-initials');
     if (headerAvatar) {
-      headerAvatar.innerText = (profile.name || currentUser.name || "LC").split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-      headerAvatar.className = `header-avatar avatar-theme-${profile.theme || 'amethyst'}`;
+      if (profile.avatarImage) {
+        headerAvatar.innerHTML = `<img src="${profile.avatarImage}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+        headerAvatar.className = "header-avatar";
+      } else {
+        headerAvatar.innerText = (profile.name || currentUser.name || "LC").split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+        headerAvatar.className = `header-avatar avatar-theme-${profile.theme || 'amethyst'}`;
+      }
     }
   }
 
@@ -2552,6 +2561,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    // Set file picture upload metadata and remove actions
+    const fileLabel = document.getElementById('profile-upload-filename');
+    const removeBtn = document.getElementById('btn-remove-uploaded-avatar');
+    if (profile.avatarImage) {
+      if (fileLabel) fileLabel.innerText = "Custom image loaded";
+      if (removeBtn) removeBtn.style.display = 'inline-block';
+    } else {
+      if (fileLabel) fileLabel.innerText = "No file selected";
+      if (removeBtn) removeBtn.style.display = 'none';
+    }
+
     // Update Skills Tag Pills
     updateSkillsPills(profile.skills || "");
 
@@ -2596,10 +2616,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (previewAvatar) {
-      previewAvatar.innerText = (profile.name || currentUser.name || "LC").split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-      // Remove any existing theme classes
-      previewAvatar.classList.remove('avatar-theme-amethyst', 'avatar-theme-emerald', 'avatar-theme-gold', 'avatar-theme-rose');
-      previewAvatar.classList.add(`avatar-theme-${profile.theme || 'amethyst'}`);
+      if (profile.avatarImage) {
+        previewAvatar.innerHTML = `<img src="${profile.avatarImage}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+        previewAvatar.className = "profile-avatar-large";
+      } else {
+        previewAvatar.innerText = (profile.name || currentUser.name || "LC").split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+        previewAvatar.classList.remove('avatar-theme-amethyst', 'avatar-theme-emerald', 'avatar-theme-gold', 'avatar-theme-rose');
+        previewAvatar.classList.add(`avatar-theme-${profile.theme || 'amethyst'}`);
+      }
     }
 
     if (previewName) previewName.innerText = profile.name || currentUser.name || "Guest Student";
@@ -2783,6 +2807,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      // Keep existing avatar image if uploaded
+      let avatarImageVal = null;
+      try {
+        const currentProfile = JSON.parse(localStorage.getItem('litcrack_student_profile') || '{}');
+        avatarImageVal = currentProfile.avatarImage || null;
+      } catch(e) {}
+
       // Construct profile object
       const profile = {
         name: nameVal,
@@ -2797,7 +2828,8 @@ document.addEventListener('DOMContentLoaded', () => {
         bio: bioVal,
         linkedin: linkedinVal,
         github: githubVal,
-        theme: themeVal
+        theme: themeVal,
+        avatarImage: avatarImageVal
       };
 
       // Save to localStorage
@@ -3157,6 +3189,72 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+
+  // Profile Picture File Selection Logic
+  const btnTriggerUpload = document.getElementById('btn-trigger-upload-avatar');
+  const fileInput = document.getElementById('profile-input-avatar-file');
+  const btnRemoveAvatar = document.getElementById('btn-remove-uploaded-avatar');
+  const labelFilename = document.getElementById('profile-upload-filename');
+
+  if (btnTriggerUpload && fileInput) {
+    btnTriggerUpload.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Image file size must be less than 2MB.");
+        fileInput.value = "";
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const base64Str = evt.target.result;
+
+        let profile = {};
+        try {
+          profile = JSON.parse(localStorage.getItem('litcrack_student_profile') || '{}');
+        } catch(e){}
+
+        profile.avatarImage = base64Str;
+        localStorage.setItem('litcrack_student_profile', JSON.stringify(profile));
+
+        updateProfilePreviewCard(profile);
+        updateSidebarProfile(profile);
+
+        if (labelFilename) labelFilename.innerText = file.name;
+        if (btnRemoveAvatar) btnRemoveAvatar.style.display = 'inline-block';
+        window.showAppToast("Profile picture loaded! Click 'Save Career Profile' to save.");
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if (btnRemoveAvatar) {
+    btnRemoveAvatar.addEventListener('click', () => {
+      if (confirm("Remove your profile picture?")) {
+        let profile = {};
+        try {
+          profile = JSON.parse(localStorage.getItem('litcrack_student_profile') || '{}');
+        } catch(e){}
+
+        delete profile.avatarImage;
+        localStorage.setItem('litcrack_student_profile', JSON.stringify(profile));
+
+        updateProfilePreviewCard(profile);
+        updateSidebarProfile(profile);
+
+        if (fileInput) fileInput.value = "";
+        if (labelFilename) labelFilename.innerText = "No file selected";
+        btnRemoveAvatar.style.display = 'none';
+        window.showAppToast("Profile picture removed! Click 'Save Career Profile' to sync changes.");
+      }
+    });
+  }
 
   // Initial Boot Actions
   checkSession();

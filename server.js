@@ -137,9 +137,9 @@ async function sendCongratulationsEmail(recipientEmail, studentName, achievement
 
 let useLocalDb = false;
 
-function readLocalDb() {
+async function readLocalDb() {
   try {
-    const raw = fs.readFileSync(path.join(__dirname, 'db.json'), 'utf8');
+    const raw = await fs.promises.readFile(path.join(__dirname, 'db.json'), 'utf8');
     return JSON.parse(raw);
   } catch (e) {
     return {
@@ -152,16 +152,16 @@ function readLocalDb() {
   }
 }
 
-function writeLocalDb(db) {
+async function writeLocalDb(db) {
   try {
-    fs.writeFileSync(path.join(__dirname, 'db.json'), JSON.stringify(db, null, 2), 'utf8');
+    await fs.promises.writeFile(path.join(__dirname, 'db.json'), JSON.stringify(db, null, 2), 'utf8');
   } catch (e) {
     console.error("Failed to write to local db.json:", e);
   }
 }
 
 async function runLocalQuery(text, params) {
-  const db = readLocalDb();
+  const db = await readLocalDb();
   const textClean = text.replace(/\s+/g, ' ').trim();
 
   // SELECT id FROM students WHERE UPPER(usn) = $1
@@ -194,7 +194,7 @@ async function runLocalQuery(text, params) {
       gdCount: 0
     };
     db.students.push(newStudent);
-    writeLocalDb(db);
+    await writeLocalDb(db);
     return {
       rows: [{
         name: newStudent.name,
@@ -259,7 +259,7 @@ async function runLocalQuery(text, params) {
       image: image || "assets/club_coord.png"
     };
     db.faculties.push(newFac);
-    writeLocalDb(db);
+    await writeLocalDb(db);
     return { rows: [newFac] };
   }
 
@@ -269,7 +269,7 @@ async function runLocalQuery(text, params) {
     const idx = db.faculties.findIndex(f => f.id === id);
     if (idx !== -1) {
       const removed = db.faculties.splice(idx, 1)[0];
-      writeLocalDb(db);
+      await writeLocalDb(db);
       return { rows: [removed] };
     }
     return { rows: [] };
@@ -307,7 +307,7 @@ async function runLocalQuery(text, params) {
     const newAnn = { id, date, title, tag, message, emailedCount: emailed_count };
     db.announcements = db.announcements || [];
     db.announcements.push(newAnn);
-    writeLocalDb(db);
+    await writeLocalDb(db);
     return { rows: [newAnn] };
   }
 
@@ -318,7 +318,7 @@ async function runLocalQuery(text, params) {
     const idx = db.announcements.findIndex(a => a.id === id);
     if (idx !== -1) {
       const removed = db.announcements.splice(idx, 1)[0];
-      writeLocalDb(db);
+      await writeLocalDb(db);
       return { rows: [removed] };
     }
     return { rows: [] };
@@ -335,7 +335,7 @@ async function runLocalQuery(text, params) {
     const options = typeof optionsRaw === 'string' ? JSON.parse(optionsRaw) : optionsRaw;
     const newQ = { id, question, options, answer, explanation };
     db.aptitudeQuestions.push(newQ);
-    writeLocalDb(db);
+    await writeLocalDb(db);
     return { rows: [newQ] };
   }
 
@@ -345,7 +345,7 @@ async function runLocalQuery(text, params) {
     const idx = db.aptitudeQuestions.findIndex(q => q.id === id);
     if (idx !== -1) {
       const removed = db.aptitudeQuestions.splice(idx, 1)[0];
-      writeLocalDb(db);
+      await writeLocalDb(db);
       return { rows: [removed] };
     }
     return { rows: [] };
@@ -373,7 +373,7 @@ async function runLocalQuery(text, params) {
     db.interviewQuestions = db.interviewQuestions || { hr: [], technical: [] };
     db.interviewQuestions[category] = db.interviewQuestions[category] || [];
     db.interviewQuestions[category].push(newQ);
-    writeLocalDb(db);
+    await writeLocalDb(db);
     return { rows: [newQ] };
   }
 
@@ -386,7 +386,7 @@ async function runLocalQuery(text, params) {
     const idx = db.interviewQuestions[category].findIndex(q => q.id === qId);
     if (idx !== -1) {
       const removed = db.interviewQuestions[category].splice(idx, 1)[0];
-      writeLocalDb(db);
+      await writeLocalDb(db);
       return { rows: [removed] };
     }
     return { rows: [] };
@@ -423,7 +423,7 @@ async function runLocalQuery(text, params) {
       s.starAnswers = starAnswers;
       s.gdCount = parseInt(gdCount);
       s.scores = scores;
-      writeLocalDb(db);
+      await writeLocalDb(db);
     }
     return { rows: [] };
   }
@@ -435,7 +435,7 @@ async function runLocalQuery(text, params) {
     const s = db.students.find(x => x.id === id);
     if (s) {
       s.scores = scores;
-      writeLocalDb(db);
+      await writeLocalDb(db);
     }
     return { rows: [] };
   }
@@ -1070,6 +1070,120 @@ app.post('/api/student/sync', async (req, res) => {
     console.error("Error synchronizing student progress profile:", err);
     res.status(500).json({ success: false, message: "Database write error." });
   }
+});
+
+// 17. AI Mock Interview Evaluation Endpoint (Server-Side Proxy)
+app.post('/api/interview/evaluate', async (req, res) => {
+  const { answer, question, keywords, goodPhrasing, apiKey: clientApiKey } = req.body;
+  if (!answer || !question) {
+    return res.status(400).json({ success: false, message: "Answer and question are required." });
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY || clientApiKey;
+
+  if (apiKey) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      const promptText = `You are a professional technical interviewer and communication coach.
+Evaluate the candidate's spoken response to the interview question: "${question}".
+
+Candidate's response: "${answer}".
+
+Analyze and score the response from 0 to 100 on three dimensions:
+1. Technical Accuracy (scoreTech): Correctness of engineering concepts, systems, logic, or HR values.
+2. Spoken Grammar & Verbal Correctness (scoreGrammar): Sentence structures, slang reduction, vocabulary.
+3. Professional Structure (scoreStructure): Clarity, formatting, conciseness.
+
+Provide also a "suggested" rephrasing: A highly polished, professional, corporate-level phrasing of their response with literary enhancement. Keep it brief.
+
+Return your response in strict, valid JSON format matching this schema, with no other text wrappers or markdown blocks:
+{
+  "scoreTech": 80,
+  "scoreGrammar": 75,
+  "scoreStructure": 85,
+  "suggested": "Polished corporate answer..."
+}`;
+
+      const geminiRes = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: promptText }] }],
+          generationConfig: { responseMimeType: "application/json" }
+        })
+      });
+
+      if (!geminiRes.ok) {
+        throw new Error(`Gemini API returned status ${geminiRes.status}`);
+      }
+
+      const data = await geminiRes.json();
+      const rawText = data.candidates[0].content.parts[0].text;
+      const parsed = JSON.parse(rawText.trim());
+
+      return res.json({
+        success: true,
+        source: 'gemini',
+        scoreTech: Math.min(100, Math.max(0, parsed.scoreTech || 50)),
+        scoreGrammar: Math.min(100, Math.max(0, parsed.scoreGrammar || 50)),
+        scoreStructure: Math.min(100, Math.max(0, parsed.scoreStructure || 50)),
+        suggested: parsed.suggested || "Could not polish phrasing."
+      });
+    } catch (err) {
+      console.warn("[API EVALUATION] Server Gemini API failed, falling back to local simulation:", err.message);
+    }
+  }
+
+  // Local Keyword-based Fallback Parser
+  const answerLower = answer.toLowerCase();
+  const kwList = Array.isArray(keywords) ? keywords : (typeof keywords === 'string' ? keywords.split(',') : []);
+  let matchedKeywords = 0;
+  kwList.forEach(word => {
+    if (answerLower.includes(word.trim().toLowerCase())) {
+      matchedKeywords++;
+    }
+  });
+
+  const kwLength = kwList.length || 1;
+  const keywordRatio = matchedKeywords / kwLength;
+  let scoreTech = Math.round(30 + (keywordRatio * 70));
+  if (answer.length < 40) {
+    scoreTech = Math.min(scoreTech, 45);
+  } else if (answer.length > 200) {
+    scoreTech = Math.min(scoreTech + 5, 100);
+  }
+
+  let scoreGrammar = 80;
+  const informalWords = ["just", "like", "random", "gonna", "wanna", "stuff", "thing"];
+  informalWords.forEach(word => {
+    if (answerLower.includes(word)) {
+      scoreGrammar -= 5;
+    }
+  });
+  const formalWords = ["however", "therefore", "consequently", "specifically", "pillars", "implementation"];
+  formalWords.forEach(word => {
+    if (answerLower.includes(word)) {
+      scoreGrammar += 4;
+    }
+  });
+  scoreGrammar = Math.max(50, Math.min(scoreGrammar, 98));
+
+  let scoreStructure = 60;
+  if (answer.length > 80) scoreStructure += 10;
+  if (answer.length > 150) scoreStructure += 10;
+  if (answerLower.includes("because") || answerLower.includes("since") || answerLower.includes("for example")) {
+    scoreStructure += 10;
+  }
+  scoreStructure = Math.min(scoreStructure, 95);
+
+  return res.json({
+    success: true,
+    source: 'local',
+    scoreTech,
+    scoreGrammar,
+    scoreStructure,
+    suggested: goodPhrasing || "No phrasing suggestion available."
+  });
 });
 
 // ==========================================================================

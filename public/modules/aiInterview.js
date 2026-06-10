@@ -214,12 +214,8 @@
       appendChatBubble("user", answer);
       textareaAnswer.value = "";
 
-      // Perform evaluation (Gemini or Local fallback)
-      if (savedApiKey) {
-        evaluateWithGemini(savedApiKey, answer);
-      } else {
-        evaluateLocalAnswer(answer);
-      }
+      // Perform evaluation via Server (handles secure Gemini and local fallbacks)
+      evaluateWithGemini(savedApiKey, answer);
 
       // Move forward
       questionIndex++;
@@ -227,7 +223,7 @@
     });
   }
 
-  // Real Gemini API Evaluation
+  // Real Gemini API Evaluation via Server Proxy
   async function evaluateWithGemini(apiKey, userAnswer) {
     const questions = INTERVIEW_QUESTIONS[activeFocus];
     const q = questions[questionIndex];
@@ -244,56 +240,30 @@
     barGrammar.style.width = "0%";
     barStructure.style.width = "0%";
     textSaid.innerText = `"${userAnswer}"`;
-    textSuggested.innerText = "Running evaluation on Google Gemini 1.5 Flash...";
+    textSuggested.innerText = "Running evaluation on KLECET AI engines...";
 
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-      
-      const promptText = `You are a professional technical interviewer and communication coach.
-Evaluate the candidate's spoken response to the interview question: "${q.question}".
-
-Candidate's response: "${userAnswer}".
-
-Analyze and score the response from 0 to 100 on three dimensions:
-1. Technical Accuracy (scoreTech): Correctness of engineering concepts, systems, logic, or HR values.
-2. Spoken Grammar & Verbal Correctness (scoreGrammar): Sentence structures, slang reduction, vocabulary.
-3. Professional Structure (scoreStructure): Clarity, formatting, conciseness.
-
-Provide also a "suggested" rephrasing: A highly polished, professional, corporate-level phrasing of their response with literary enhancement. Keep it brief.
-
-Return your response in strict, valid JSON format matching this schema, with no other text wrappers or markdown blocks:
-{
-  "scoreTech": 80,
-  "scoreGrammar": 75,
-  "scoreStructure": 85,
-  "suggested": "Polished corporate answer..."
-}`;
-
-      const res = await fetch(url, {
+      const res = await fetch('/api/interview/evaluate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{
-            parts: [{ text: promptText }]
-          }],
-          generationConfig: {
-            responseMimeType: "application/json"
-          }
+          answer: userAnswer,
+          question: q.question,
+          keywords: q.keywords,
+          goodPhrasing: q.goodPhrasing || q.good_phrasing,
+          apiKey: apiKey
         })
       });
 
-      if (!res.ok) throw new Error("API call failed.");
+      if (!res.ok) throw new Error("Server proxy evaluation failed.");
 
       const data = await res.json();
-      const rawText = data.candidates[0].content.parts[0].text;
-      const parsed = JSON.parse(rawText);
+      if (!data.success) throw new Error(data.message || "Failed evaluation.");
 
-      const scoreTech = Math.min(100, Math.max(0, parsed.scoreTech || 50));
-      const scoreGrammar = Math.min(100, Math.max(0, parsed.scoreGrammar || 50));
-      const scoreStructure = Math.min(100, Math.max(0, parsed.scoreStructure || 50));
-      const suggested = parsed.suggested || "Could not polish phrasing.";
+      const scoreTech = data.scoreTech;
+      const scoreGrammar = data.scoreGrammar;
+      const scoreStructure = data.scoreStructure;
+      const suggested = data.suggested;
 
       const avg = (scoreTech + scoreGrammar + scoreStructure) / 3;
       let grade = "C";
@@ -314,7 +284,7 @@ Return your response in strict, valid JSON format matching this schema, with no 
       triggerScorecardUpdateNotify();
 
     } catch (err) {
-      console.warn("Gemini API failed, falling back to local simulator.", err);
+      console.warn("Server evaluation failed, running client local backup parser.", err);
       evaluateLocalAnswer(userAnswer);
     }
   }

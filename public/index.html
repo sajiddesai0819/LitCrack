@@ -1480,6 +1480,21 @@
                     </div>
                   </div>
 
+                  <!-- Profile Picture Uploader -->
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label>Profile Picture Upload</label>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                      <button class="btn btn-outline" id="btn-trigger-upload-avatar" type="button" style="font-size: 0.82rem; padding: 0.5rem 1rem;">
+                        <i class="fa-solid fa-camera" style="margin-right: 0.25rem;"></i> Select Local Image
+                      </button>
+                      <button class="btn btn-outline btn-star-card-action btn-star-delete" id="btn-remove-uploaded-avatar" type="button" style="display: none; padding: 0.5rem;" title="Remove Profile Picture">
+                        <i class="fa-solid fa-trash-can"></i>
+                      </button>
+                      <input type="file" id="profile-input-avatar-file" accept="image/*" style="display: none;">
+                      <span id="profile-upload-filename" style="font-size: 0.76rem; color: var(--text-muted); font-style: italic;">No file selected</span>
+                    </div>
+                  </div>
+
                   <div class="grid-2" style="gap: 1rem;">
                     <div class="form-group" style="margin-bottom: 0;">
                       <label for="profile-input-name">Full Name</label>
