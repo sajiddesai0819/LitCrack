@@ -792,6 +792,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (btnRemoveFacPic) btnRemoveFacPic.style.display = 'none';
           tempFacultyPicBase64 = null;
           loadAdminFacultiesRoster();
+          loadLandingAdvisors();
           alert("Faculty member successfully added!");
         } else {
           alert(data.message || "Failed to add faculty.");
@@ -814,6 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
       if (data.success) {
         loadAdminFacultiesRoster();
+        loadLandingAdvisors();
         alert(data.message);
       } else {
         alert(data.message || "Failed to delete.");
@@ -855,6 +857,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadAdminFacultiesRoster();
             // Also refresh public about page roster if container exists
             loadFacultiesRoster();
+            loadLandingAdvisors();
             alert("Faculty picture updated successfully!");
           } else {
             alert(data.message || "Failed to update picture.");
@@ -3406,6 +3409,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  async function loadLandingAdvisors() {
+    const container = document.getElementById('landing-advisors-container');
+    if (!container) return;
+
+    try {
+      const res = await fetch('/api/faculties');
+      const data = await res.json();
+
+      if (data.success && data.faculties && data.faculties.length > 0) {
+        container.innerHTML = data.faculties.map(f => `
+          <div class="advisor-card">
+            <img class="advisor-avatar" src="${f.image || 'assets/club_coord.png'}" alt="${f.name}" style="object-fit: cover;">
+            <h4>${f.name}</h4>
+            <p>${f.role}</p>
+          </div>
+        `).join('');
+      }
+    } catch (err) {
+      console.error("Error loading landing advisors:", err);
+    }
+  }
+  window.loadLandingAdvisors = loadLandingAdvisors;
+
   // Initial Boot Actions
   checkSession();
   renderRoadmap();
@@ -3416,6 +3442,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initShowcaseInteractions();
   initFAQAccordion();
   initScrollReveal();
+  loadLandingAdvisors();
 
   window.reinit3DTilt = init3DTilt;
   window.reinitLandingCanvas = initLandingCanvas;
