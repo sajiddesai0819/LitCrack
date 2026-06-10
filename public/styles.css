@@ -1645,6 +1645,10 @@ select.form-control {
     display: none;
   }
 
+  .logout-text-span {
+    display: none;
+  }
+
   .glass-card {
     padding: 1.25rem;
   }

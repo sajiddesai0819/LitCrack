@@ -437,7 +437,7 @@
     
     <!-- Sidebar Navigation Drawer -->
     <aside class="sidebar" id="sidebar">
-      <div class="logo-section">
+      <div class="logo-section" id="sidebar-logo" style="cursor: pointer;">
         <div class="logo-icon">
           <svg class="litcrack-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
             <defs>
@@ -541,8 +541,8 @@
           <button class="hamburger-btn" id="menu-toggle">
             <i class="fa-solid fa-bars"></i>
           </button>
-          <div class="logo-text" style="display: none; align-items: center; gap: 0.5rem;" id="mobile-brand">
-            <div class="logo-icon" style="width: 28px; height: 28px; margin: 0;">
+          <div class="logo-text" style="display: none; align-items: center; gap: 0.5rem; cursor: pointer;" id="mobile-brand">
+            <div class="logo-icon" style="margin: 0;">
               <svg class="litcrack-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   <linearGradient id="logo-grad-primary-mob" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -576,6 +576,9 @@
           <div class="header-profile-btn" id="header-profile-shortcut" onclick="window.switchView('student-profile')" style="cursor: pointer; display: flex; align-items: center; gap: 0.65rem;" title="Go to Profile">
             <div class="header-avatar" id="header-avatar-initials">LC</div>
           </div>
+          <button id="btn-header-logout" class="btn btn-outline" style="padding: 6px 12px; font-size: 0.8rem; border-color: var(--danger); color: var(--danger); display: flex; align-items: center; gap: 0.35rem;" title="Logout">
+            <i class="fa-solid fa-right-from-bracket"></i> <span class="logout-text-span">Logout</span>
+          </button>
         </div>
       </header>
 
@@ -1868,7 +1871,7 @@
         <div class="footer-grid">
           <div class="footer-left">
             <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-              <span class="footer-logo">LitCrack</span>
+              <span class="footer-logo" onclick="window.showLandingPage()" style="cursor: pointer;">LitCrack</span>
               <span class="footer-separator">|</span>
               <span class="footer-desc">KLECET Literary Club Tech Prep Hub</span>
             </div>
@@ -1882,6 +1885,7 @@
         </div>
 
         <div class="footer-links-row">
+          <a href="#" onclick="window.showLandingPage()">Home</a> • 
           <a href="#" onclick="window.switchView('dashboard')">Dashboard</a> • 
           <a href="#" onclick="window.switchView('roadmap')">Roadmap</a> • 
           <a href="#" onclick="window.switchView('gd-hub')">GD Simulator</a> • 

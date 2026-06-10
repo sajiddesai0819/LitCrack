@@ -50,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnRegisterSubmit = document.getElementById('btn-register-submit');
 
   const btnLogout = document.getElementById('btn-logout');
+  const btnHeaderLogout = document.getElementById('btn-header-logout');
 
   // Sidebar profile tags
   const navAvatar = document.getElementById('nav-profile-avatar');
@@ -170,31 +171,49 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Check existing session
+  // Unified helper to display the landing page and hide the app wrapper
+  window.showLandingPage = () => {
+    const landingPage = document.getElementById('landing-page');
+    const appContainer = document.getElementById('app-container');
+    authOverlay.style.display = 'none';
+
+    if (landingPage) {
+      landingPage.style.display = 'flex';
+      runLandingStatsCounter();
+      if (typeof initLandingCanvas === 'function') initLandingCanvas();
+    } else {
+      authOverlay.style.display = 'flex';
+    }
+
+    if (appContainer) {
+      appContainer.style.display = 'none';
+    }
+  };
+
+  // Check existing session (Ensures landing page ALWAYS loads first!)
   function checkSession() {
     const saved = localStorage.getItem('litcrack_user');
-    const landingPage = document.getElementById('landing-page');
     const btnLandingBegin = document.getElementById('btn-landing-begin');
 
     if (btnLandingBegin) {
       btnLandingBegin.addEventListener('click', () => {
-        authOverlay.style.display = 'flex';
+        if (currentUser) {
+          // If already logged in, enter dashboard directly
+          enterDashboard();
+        } else {
+          // If guest, show login/register overlay
+          authOverlay.style.display = 'flex';
+        }
       });
     }
 
     if (saved) {
       currentUser = JSON.parse(saved);
-      applyUserSession();
-      if (landingPage) landingPage.style.display = 'none';
-    } else {
-      if (landingPage) {
-        landingPage.style.display = 'flex';
-        authOverlay.style.display = 'none';
-        runLandingStatsCounter();
-      } else {
-        authOverlay.style.display = 'flex';
-      }
+      setupUserSessionData();
     }
+
+    // Force showing landing page on initial load
+    window.showLandingPage();
   }
 
   // Toggle Auth Tabs
@@ -233,7 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.success) {
         currentUser = data.user;
         localStorage.setItem('litcrack_user', JSON.stringify(currentUser));
-        applyUserSession();
+        setupUserSessionData();
+        enterDashboard();
       } else {
         alert(data.message || "Invalid credentials.");
       }
@@ -271,7 +291,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.success) {
         currentUser = data.user;
         localStorage.setItem('litcrack_user', JSON.stringify(currentUser));
-        applyUserSession();
+        setupUserSessionData();
+        enterDashboard();
       } else {
         alert(data.message || "Registration failed.");
       }
@@ -385,18 +406,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Apply user role view layout
-  function applyUserSession() {
-    authOverlay.style.display = 'none';
-    const landingPage = document.getElementById('landing-page');
-    if (landingPage) landingPage.style.display = 'none';
-    
-    // Clear forms
-    inputLoginEmail.value = '';
-    inputLoginPass.value = '';
-    inputRegName.value = '';
-    inputRegUsn.value = '';
-    inputRegEmail.value = '';
-    inputRegPass.value = '';
+  // Pre-fills data and setup elements for session
+  function setupUserSessionData() {
+    if (!currentUser) return;
 
     // Populate Sidebar profile details
     navName.innerText = currentUser.name;
@@ -433,7 +445,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (adminCreateLobby) adminCreateLobby.style.display = 'block';
       const headerProfileShortcut = document.getElementById('header-profile-shortcut');
       if (headerProfileShortcut) headerProfileShortcut.style.display = 'none';
-      window.switchView('admin-deck');
     } else {
       const headerProfileShortcut = document.getElementById('header-profile-shortcut');
       if (headerProfileShortcut) headerProfileShortcut.style.display = 'flex';
@@ -496,32 +507,69 @@ document.addEventListener('DOMContentLoaded', () => {
       // Refresh Roadmap views & Dashboard stats
       if (typeof renderRoadmap === 'function') renderRoadmap();
       if (typeof updateDashboardStats === 'function') updateDashboardStats();
+    }
+  }
 
+  // Transitions the user from landing to dashboard
+  function enterDashboard() {
+    if (!currentUser) return;
+
+    authOverlay.style.display = 'none';
+    const landingPage = document.getElementById('landing-page');
+    if (landingPage) landingPage.style.display = 'none';
+    
+    const appContainer = document.getElementById('app-container');
+    if (appContainer) {
+      appContainer.style.display = 'flex';
+    }
+    
+    // Clear forms
+    inputLoginEmail.value = '';
+    inputLoginPass.value = '';
+    inputRegName.value = '';
+    inputRegUsn.value = '';
+    inputRegEmail.value = '';
+    inputRegPass.value = '';
+
+    if (currentUser.role === 'admin') {
+      window.switchView('admin-deck');
+    } else {
       window.switchView('dashboard');
     }
   }
 
-  // Logout Click
+  // Unified sign-out handler
+  const handleLogout = () => {
+    if (confirm("Logout from LitCrack portal?")) {
+      localStorage.removeItem('litcrack_user');
+      localStorage.removeItem('litcrack_practice_scores');
+      localStorage.removeItem('litcrack_roadmap_progress');
+      localStorage.removeItem('litcrack_star_saved');
+      localStorage.removeItem('litcrack_gd_count');
+      currentUser = null;
+      window.showLandingPage();
+      window.switchView('dashboard');
+    }
+  };
+
   if (btnLogout) {
-    btnLogout.addEventListener('click', () => {
-      if (confirm("Logout from LitCrack portal?")) {
-        localStorage.removeItem('litcrack_user');
-        localStorage.removeItem('litcrack_practice_scores');
-        localStorage.removeItem('litcrack_roadmap_progress');
-        localStorage.removeItem('litcrack_star_saved');
-        localStorage.removeItem('litcrack_gd_count');
-        currentUser = null;
-        const landingPage = document.getElementById('landing-page');
-        if (landingPage) {
-          landingPage.style.display = 'flex';
-          authOverlay.style.display = 'none';
-          runLandingStatsCounter();
-          if (typeof initLandingCanvas === 'function') initLandingCanvas();
-        } else {
-          authOverlay.style.display = 'flex';
-        }
-        window.switchView('dashboard');
-      }
+    btnLogout.addEventListener('click', handleLogout);
+  }
+  if (btnHeaderLogout) {
+    btnHeaderLogout.addEventListener('click', handleLogout);
+  }
+
+  // Logo & navbar brand click handlers for landing page redirect
+  const sidebarLogo = document.getElementById('sidebar-logo');
+  const mobileBrand = document.getElementById('mobile-brand');
+  if (sidebarLogo) {
+    sidebarLogo.addEventListener('click', () => {
+      window.showLandingPage();
+    });
+  }
+  if (mobileBrand) {
+    mobileBrand.addEventListener('click', () => {
+      window.showLandingPage();
     });
   }
 
