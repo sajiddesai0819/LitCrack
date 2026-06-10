@@ -618,6 +618,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const inputNewFacName = document.getElementById('new-faculty-name');
   const inputNewFacRole = document.getElementById('new-faculty-role');
   const btnAddFacSubmit = document.getElementById('btn-add-faculty-submit');
+
+  const btnTriggerFacUpload = document.getElementById('btn-trigger-upload-faculty-pic');
+  const fileFacInput = document.getElementById('faculty-input-pic-file');
+  const btnRemoveFacPic = document.getElementById('btn-remove-faculty-pic');
+  const labelFacFilename = document.getElementById('faculty-upload-filename');
+  let tempFacultyPicBase64 = null;
   
   const labelUsersCount = document.getElementById('admin-stat-users-count');
 
@@ -695,7 +701,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           adminFacultiesTbody.innerHTML = data.faculties.map(f => `
             <tr>
-              <td><strong>${f.name}</strong></td>
+              <td>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <img src="${f.image || 'assets/club_coord.png'}" alt="${f.name}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--primary-glow);">
+                  <strong>${f.name}</strong>
+                </div>
+              </td>
               <td>${f.role}</td>
               <td>
                 <button class="btn btn-outline" style="color: var(--danger); padding: 0.35rem 0.75rem; border-color: rgba(239, 68, 68, 0.2);" onclick="window.removeFacultyMember(${f.id})">
@@ -709,6 +720,41 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       console.error(err);
     }
+  }
+
+  // Faculty Picture File Selection Logic (Admin)
+  if (btnTriggerFacUpload && fileFacInput) {
+    btnTriggerFacUpload.addEventListener('click', () => {
+      fileFacInput.click();
+    });
+
+    fileFacInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Image file size must be less than 2MB.");
+        fileFacInput.value = "";
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        tempFacultyPicBase64 = evt.target.result;
+        if (labelFacFilename) labelFacFilename.innerText = file.name;
+        if (btnRemoveFacPic) btnRemoveFacPic.style.display = 'inline-block';
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if (btnRemoveFacPic) {
+    btnRemoveFacPic.addEventListener('click', () => {
+      tempFacultyPicBase64 = null;
+      if (fileFacInput) fileFacInput.value = "";
+      if (labelFacFilename) labelFacFilename.innerText = "No file selected";
+      btnRemoveFacPic.style.display = 'none';
+    });
   }
 
   // Add Faculty (Admin)
@@ -729,13 +775,17 @@ document.addEventListener('DOMContentLoaded', () => {
             'Content-Type': 'application/json',
             'admin-email': currentUser.email
           },
-          body: JSON.stringify({ name, role })
+          body: JSON.stringify({ name, role, image: tempFacultyPicBase64 })
         });
         const data = await res.json();
 
         if (data.success) {
           inputNewFacName.value = '';
           inputNewFacRole.value = '';
+          if (fileFacInput) fileFacInput.value = '';
+          if (labelFacFilename) labelFacFilename.innerText = 'No file selected';
+          if (btnRemoveFacPic) btnRemoveFacPic.style.display = 'none';
+          tempFacultyPicBase64 = null;
           loadAdminFacultiesRoster();
           alert("Faculty member successfully added!");
         } else {

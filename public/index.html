@@ -1662,7 +1662,7 @@
               <!-- Panel 2: Faculty Editor -->
               <div id="admin-panel-faculties" style="display: none;">
                 <h4 style="margin-bottom: 1rem; color: #fff;">Manage Faculty Directory</h4>
-                <div class="grid-2" style="gap: 1.5rem; margin-bottom: 1rem;">
+                <div class="grid-3" style="gap: 1.5rem; margin-bottom: 1.25rem;">
                   <div class="form-group">
                     <label for="new-faculty-name">Faculty Name</label>
                     <input type="text" id="new-faculty-name" class="form-control" placeholder="e.g. Dr. Ramesh Patil">
@@ -1670,6 +1670,17 @@
                   <div class="form-group">
                     <label for="new-faculty-role">Designation / Role</label>
                     <input type="text" id="new-faculty-role" class="form-control" placeholder="e.g. Associate Professor">
+                  </div>
+                  <div class="form-group">
+                    <label>Faculty Picture (Optional)</label>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; height: 44px;">
+                      <button class="btn btn-outline" id="btn-trigger-upload-faculty-pic" type="button" style="padding: 0.5rem 1rem; font-size: 0.8rem; flex-shrink: 0;">Select Image</button>
+                      <input type="file" id="faculty-input-pic-file" accept="image/*" style="display: none;">
+                      <button class="btn btn-outline" id="btn-remove-faculty-pic" style="border-color: var(--danger); color: var(--danger); display: none; padding: 0.5rem; font-size: 0.8rem;" type="button" title="Remove image">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                      <span id="faculty-upload-filename" style="font-size: 0.72rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px;">No file selected</span>
+                    </div>
                   </div>
                 </div>
                 <button class="btn btn-primary" id="btn-add-faculty-submit" style="margin-bottom: 2rem;">Add Faculty Member</button>

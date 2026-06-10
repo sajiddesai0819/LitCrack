@@ -570,9 +570,11 @@ async function initPostgresDatabase() {
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         role VARCHAR(255) NOT NULL,
-        image VARCHAR(255)
+        image TEXT
       );
     `);
+    // Ensure image column can hold base64 data URL
+    await pool.query("ALTER TABLE faculties ALTER COLUMN image TYPE TEXT;").catch(() => {});
 
     // 3. Create announcements table
     await pool.query(`
@@ -817,7 +819,7 @@ app.get('/api/admin/students', adminVerify, async (req, res) => {
 
 // 5. Add Faculty Member (Admin)
 app.post('/api/admin/faculty/add', adminVerify, async (req, res) => {
-  const { name, role } = req.body;
+  const { name, role, image } = req.body;
   if (!name || !role) {
     return res.status(400).json({ success: false, message: "Faculty name and role are required." });
   }
@@ -827,7 +829,7 @@ app.post('/api/admin/faculty/add', adminVerify, async (req, res) => {
       INSERT INTO faculties (name, role, image)
       VALUES ($1, $2, $3)
       RETURNING id, name, role, image;
-    `, [name, role, "assets/club_coord.png"]);
+    `, [name, role, image || "assets/club_coord.png"]);
     res.json({ success: true, faculty: insertRes.rows[0] });
   } catch (err) {
     console.error("Error adding faculty:", err);
