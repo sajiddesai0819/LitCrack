@@ -516,6 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
           landingPage.style.display = 'flex';
           authOverlay.style.display = 'none';
           runLandingStatsCounter();
+          if (typeof initLandingCanvas === 'function') initLandingCanvas();
         } else {
           authOverlay.style.display = 'flex';
         }
@@ -2823,11 +2824,351 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Canvas Particles Background Simulation
+  let particleAnimationId = null;
+  function initLandingCanvas() {
+    const canvas = document.getElementById('landing-canvas');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    let width = (canvas.width = canvas.offsetWidth);
+    let height = (canvas.height = canvas.offsetHeight);
+
+    const particles = [];
+    const maxParticles = 65;
+    const connectionDist = 110;
+    const mouse = { x: null, y: null, radius: 150 };
+
+    function setCanvasDimensions() {
+      if (!canvas) return;
+      width = canvas.width = canvas.offsetWidth;
+      height = canvas.height = canvas.offsetHeight;
+    }
+    window.addEventListener('resize', setCanvasDimensions);
+
+    const landingPageEl = document.getElementById('landing-page');
+    if (landingPageEl) {
+      landingPageEl.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = e.clientX - rect.left;
+        mouse.y = e.clientY - rect.top;
+      });
+
+      landingPageEl.addEventListener('mouseleave', () => {
+        mouse.x = null;
+        mouse.y = null;
+      });
+    }
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.vx = (Math.random() - 0.5) * 0.45;
+        this.vy = (Math.random() - 0.5) * 0.45;
+        this.radius = Math.random() * 2 + 1;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (this.x < 0 || this.x > width) this.vx *= -1;
+        if (this.y < 0 || this.y > height) this.vy *= -1;
+
+        // Mouse attraction
+        if (mouse.x !== null && mouse.y !== null) {
+          const dx = mouse.x - this.x;
+          const dy = mouse.y - this.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < mouse.radius) {
+            const force = (mouse.radius - dist) / mouse.radius;
+            this.x -= (dx / dist) * force * 0.5;
+            this.y -= (dy / dist) * force * 0.5;
+          }
+        }
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(157, 89, 247, 0.4)';
+        ctx.fill();
+      }
+    }
+
+    for (let i = 0; i < maxParticles; i++) {
+      particles.push(new Particle());
+    }
+
+    function animate() {
+      if (document.getElementById('landing-page').style.display === 'none') {
+        if (particleAnimationId) {
+          cancelAnimationFrame(particleAnimationId);
+          particleAnimationId = null;
+        }
+        return;
+      }
+      ctx.clearRect(0, 0, width, height);
+
+      for (let i = 0; i < particles.length; i++) {
+        particles[i].update();
+        particles[i].draw();
+
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < connectionDist) {
+            let alpha = (1 - dist / connectionDist) * 0.15;
+            
+            if (mouse.x !== null && mouse.y !== null) {
+              const mdx1 = mouse.x - particles[i].x;
+              const mdy1 = mouse.y - particles[i].y;
+              const mdist1 = Math.sqrt(mdx1 * mdx1 + mdy1 * mdy1);
+              if (mdist1 < mouse.radius) {
+                alpha += (1 - mdist1 / mouse.radius) * 0.15;
+              }
+            }
+
+            ctx.strokeStyle = `rgba(6, 182, 212, ${alpha})`;
+            ctx.lineWidth = 0.75;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      particleAnimationId = requestAnimationFrame(animate);
+    }
+
+    if (particleAnimationId) {
+      cancelAnimationFrame(particleAnimationId);
+    }
+    animate();
+  }
+
+  // Spotlight Hover Coordinates Tracker
+  function initSpotlightHover() {
+    const cards = document.querySelectorAll('.landing-card');
+    cards.forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+      });
+    });
+  }
+
+  // Live Portal Showcase Interactivity
+  let starShowcaseInterval = null;
+  function initShowcaseInteractions() {
+    const tabs = document.querySelectorAll('.showcase-tab');
+    const panels = document.querySelectorAll('.showcase-panel');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+
+        tab.classList.add('active');
+        const showcaseId = tab.getAttribute('data-showcase');
+        const activePanel = document.getElementById(`panel-showcase-${showcaseId}`);
+        if (activePanel) {
+          activePanel.classList.add('active');
+        }
+
+        if (showcaseId === 'star') {
+          startMockStarSequence();
+        } else {
+          stopMockStarSequence();
+        }
+      });
+    });
+
+    // Sub-modules:
+    // A. AI Speech Interview Simulation
+    const mockBtnMic = document.getElementById('mock-btn-mic');
+    const mockAudioWave = document.getElementById('mock-audio-wave');
+    const mockMicStatus = document.getElementById('mock-mic-status');
+    const mockStudentResponse = document.getElementById('mock-student-response');
+
+    if (mockBtnMic) {
+      mockBtnMic.addEventListener('click', () => {
+        mockBtnMic.disabled = true;
+        mockBtnMic.style.background = 'var(--danger)';
+        mockBtnMic.style.borderColor = 'var(--danger)';
+        mockBtnMic.innerHTML = `<i class="fa-solid fa-microphone-lines fa-fade" style="color: #fff;"></i>`;
+        if (mockAudioWave) mockAudioWave.style.display = 'flex';
+        if (mockMicStatus) mockMicStatus.innerText = "Listening to your response...";
+        if (mockStudentResponse) mockStudentResponse.style.display = 'none';
+
+        setTimeout(() => {
+          if (mockAudioWave) mockAudioWave.style.display = 'none';
+          mockBtnMic.style.background = 'none';
+          mockBtnMic.style.borderColor = 'var(--primary)';
+          mockBtnMic.innerHTML = `<i class="fa-solid fa-microphone" style="color: var(--primary-bright);"></i>`;
+          if (mockMicStatus) mockMicStatus.innerText = "Answer submitted successfully!";
+          if (mockStudentResponse) mockStudentResponse.style.display = 'block';
+
+          const chatWindow = document.querySelector('.mock-chat-window');
+          if (chatWindow) {
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+          }
+
+          setTimeout(() => {
+            mockBtnMic.disabled = false;
+            if (mockMicStatus) mockMicStatus.innerText = "Click microphone to respond";
+          }, 2000);
+
+        }, 3000);
+      });
+    }
+
+    // B. STAR Steps Cycle Sequence
+    function startMockStarSequence() {
+      stopMockStarSequence();
+      const fields = ['s', 't', 'a', 'r'];
+      let idx = 0;
+
+      function highlightStep() {
+        fields.forEach(f => {
+          const el = document.getElementById(`mock-star-${f}`);
+          if (el) el.classList.remove('highlighted');
+        });
+
+        const activeField = document.getElementById(`mock-star-${fields[idx]}`);
+        if (activeField) {
+          activeField.classList.add('highlighted');
+        }
+        idx = (idx + 1) % fields.length;
+      }
+
+      highlightStep();
+      starShowcaseInterval = setInterval(highlightStep, 2500);
+    }
+
+    // C. Practice Quiz Arena Simulated Clicks
+    const quizOpts = document.querySelectorAll('.mock-quiz-opt');
+    const quizFeedback = document.getElementById('mock-quiz-feedback');
+
+    quizOpts.forEach(opt => {
+      opt.addEventListener('click', () => {
+        quizOpts.forEach(o => {
+          o.classList.remove('clicked-wrong', 'clicked-correct');
+          o.disabled = true;
+        });
+
+        const isCorrect = opt.getAttribute('data-correct') === 'true';
+        if (isCorrect) {
+          opt.classList.add('clicked-correct');
+          if (quizFeedback) {
+            quizFeedback.style.display = 'flex';
+            quizFeedback.querySelector('p').innerHTML = `<strong>Correct Answer!</strong> Stacks add and remove items only from the top boundary (LIFO).`;
+            const badge = quizFeedback.querySelector('.quiz-badge-add');
+            if (badge) badge.style.display = 'inline-block';
+          }
+        } else {
+          opt.classList.add('clicked-wrong');
+          quizOpts.forEach(o => {
+            if (o.getAttribute('data-correct') === 'true') {
+              o.classList.add('clicked-correct');
+            }
+          });
+          if (quizFeedback) {
+            quizFeedback.style.display = 'flex';
+            quizFeedback.querySelector('p').innerHTML = `<strong>Option Chosen is Incorrect!</strong> Correct answer is Stack (LIFO).`;
+            const badge = quizFeedback.querySelector('.quiz-badge-add');
+            if (badge) badge.style.display = 'none';
+          }
+        }
+
+        setTimeout(() => {
+          quizOpts.forEach(o => {
+            o.classList.remove('clicked-wrong', 'clicked-correct');
+            o.disabled = false;
+          });
+          if (quizFeedback) quizFeedback.style.display = 'none';
+        }, 4000);
+      });
+    });
+  }
+
+  // FAQ Accordion Panel Toggle Logic
+  function initFAQAccordion() {
+    const triggers = document.querySelectorAll('.faq-trigger');
+
+    triggers.forEach(trigger => {
+      trigger.addEventListener('click', () => {
+        const item = trigger.closest('.faq-item');
+        const content = item.querySelector('.faq-content');
+        const isActive = item.classList.contains('active');
+
+        document.querySelectorAll('.faq-item').forEach(i => {
+          i.classList.remove('active');
+          i.querySelector('.faq-content').style.maxHeight = null;
+        });
+
+        if (!isActive) {
+          item.classList.add('active');
+          content.style.maxHeight = content.scrollHeight + 'px';
+        }
+      });
+    });
+  }
+
+  // Scroll Reveal Observer & Scroll Indicator scroll-down bindings
+  function initScrollReveal() {
+    const scrollInd = document.querySelector('.scroll-indicator');
+    const statsSec = document.querySelector('.landing-stats');
+    if (scrollInd && statsSec) {
+      scrollInd.addEventListener('click', () => {
+        statsSec.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
+
+    const revealedElements = document.querySelectorAll('.landing-stats, .landing-showcase, .landing-features, .landing-advisors, .landing-faq');
+    revealedElements.forEach(el => {
+      el.classList.add('reveal-init');
+    });
+
+    const observerOptions = {
+      root: null,
+      threshold: 0.12,
+      rootMargin: '0px 0px -40px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries, obs) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('revealed');
+          obs.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    revealedElements.forEach(el => {
+      observer.observe(el);
+    });
+  }
+
+
   // Initial Boot Actions
   checkSession();
   renderRoadmap();
   updateDashboardStats();
   init3DTilt();
+  initLandingCanvas();
+  initSpotlightHover();
+  initShowcaseInteractions();
+  initFAQAccordion();
+  initScrollReveal();
 
   window.reinit3DTilt = init3DTilt;
+  window.reinitLandingCanvas = initLandingCanvas;
 });

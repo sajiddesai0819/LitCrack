@@ -3379,5 +3379,558 @@ select.form-control {
 }
 
 
+/* ==========================================================================
+   PHASE 2 PREMIUM INTERACTIVE ADDITIONS
+   ========================================================================== */
+
+/* 1. Canvas particle backdrop styling */
+#landing-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 890;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Ensure landing contents sit above canvas */
+.landing-header, .landing-body-content, .landing-footer {
+  position: relative;
+  z-index: 910;
+}
+
+/* 2. Spotlight gradient effect for landing cards */
+.landing-card {
+  position: relative;
+  overflow: hidden;
+}
+.landing-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    400px circle at var(--mouse-x, 0px) var(--mouse-y, 0px),
+    rgba(168, 85, 247, 0.08),
+    transparent 80%
+  );
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+.landing-card:hover::before {
+  opacity: 1;
+}
+
+/* 3. Bouncing scroll indicator styling */
+.scroll-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 3.5rem;
+  animation: floatBounce 2s infinite ease-in-out;
+  cursor: pointer;
+}
+.mouse-wheel {
+  width: 26px;
+  height: 42px;
+  border: 2px solid var(--text-muted);
+  border-radius: 15px;
+  position: relative;
+}
+.mouse-wheel::after {
+  content: "";
+  width: 4px;
+  height: 8px;
+  background-color: var(--secondary-bright);
+  border-radius: 2px;
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: wheelScroll 1.6s infinite linear;
+}
+@keyframes floatBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes wheelScroll {
+  0% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, 16px); }
+}
+
+/* 4. Inside the Portal Showcase Styling */
+.landing-showcase {
+  width: 100%;
+}
+.showcase-container {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 2.5rem;
+  background: rgba(8, 8, 10, 0.45);
+  border: 1px solid var(--border-light);
+  border-radius: 24px;
+  padding: 2.5rem;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+}
+.showcase-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.showcase-tab {
+  background: rgba(255, 255, 255, 0.005);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 1.25rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 100%;
+}
+.showcase-tab i {
+  font-size: 1.25rem;
+  padding: 0.65rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-muted);
+  transition: var(--transition-fast);
+}
+.showcase-tab h4 {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-desc);
+  margin: 0 0 0.2rem 0;
+  transition: var(--transition-fast);
+}
+.showcase-tab p {
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  margin: 0;
+}
+.showcase-tab.active {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(244, 63, 94, 0.03));
+  border-color: rgba(168, 85, 247, 0.35);
+  box-shadow: 0 10px 25px rgba(168, 85, 247, 0.05);
+}
+.showcase-tab.active i {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 0 15px var(--primary-glow);
+}
+.showcase-tab.active h4 {
+  color: #fff;
+}
+.showcase-tab:hover:not(.active) {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.showcase-preview-frame {
+  background: rgba(4, 4, 6, 0.7);
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 380px;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.02);
+}
+.mock-browser-header {
+  height: 40px;
+  background: rgba(10, 10, 14, 0.9);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  padding: 0 1.25rem;
+  gap: 1.5rem;
+}
+.mock-browser-dots {
+  display: flex;
+  gap: 6px;
+}
+.mock-browser-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.15);
+}
+.mock-browser-address {
+  flex-grow: 1;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 0.2rem 0.75rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: monospace;
+  text-align: center;
+}
+.mock-browser-content {
+  flex-grow: 1;
+  position: relative;
+  padding: 1.5rem;
+  min-height: 0;
+}
+.showcase-panel {
+  display: none;
+  height: 100%;
+  animation: fadeInPanel 0.4s var(--ease-out-expo) forwards;
+}
+.showcase-panel.active {
+  display: block;
+}
+@keyframes fadeInPanel {
+  from { opacity: 0; transform: scale(0.98) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Panel 1: Interview Mock */
+#panel-showcase-interview {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.mock-chat-window {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto;
+  flex-grow: 1;
+  margin-bottom: 1rem;
+}
+.mock-chat-bubble {
+  max-width: 80%;
+  padding: 0.85rem 1.15rem;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+.mock-chat-bubble.ai {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--border-light);
+  border-top-left-radius: 4px;
+}
+.mock-chat-bubble.student {
+  align-self: flex-end;
+  background: linear-gradient(135deg, var(--primary), var(--accent-rose));
+  border-top-right-radius: 4px;
+  color: #fff;
+  animation: bubbleSlideIn 0.5s var(--ease-out-expo) forwards;
+}
+@keyframes bubbleSlideIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.bubble-sender {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--secondary-bright);
+  margin-bottom: 0.25rem;
+}
+.mock-chat-bubble.student .bubble-sender {
+  color: rgba(255,255,255,0.8);
+}
+.bubble-text {
+  word-break: break-word;
+}
+.mock-chat-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+}
+.mock-audio-wave {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+}
+.mock-audio-wave span {
+  width: 3px;
+  height: 100%;
+  background-color: var(--primary-bright);
+  border-radius: 10px;
+  animation: mockWave 1.2s infinite ease-in-out;
+}
+.mock-audio-wave span:nth-child(2) { animation-delay: 0.15s; }
+.mock-audio-wave span:nth-child(3) { animation-delay: 0.3s; }
+.mock-audio-wave span:nth-child(4) { animation-delay: 0.45s; }
+.mock-audio-wave span:nth-child(5) { animation-delay: 0.6s; }
+@keyframes mockWave {
+  0%, 100% { height: 4px; }
+  50% { height: 20px; }
+}
+
+/* Panel 2: STAR Mock */
+.mock-star-container {
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  gap: 1.25rem;
+  height: 100%;
+}
+.mock-star-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.mock-star-field {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.65rem;
+  background: rgba(255,255,255,0.005);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+.mock-star-field.highlighted {
+  border-color: rgba(168, 85, 247, 0.4);
+  background: rgba(168, 85, 247, 0.04);
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.05);
+}
+.mock-star-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border-light);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-desc);
+  flex-shrink: 0;
+}
+.mock-star-field.highlighted .mock-star-badge {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow: 0 0 8px var(--primary-glow);
+}
+.mock-star-body {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+.mock-star-field.highlighted .mock-star-body {
+  color: #fff;
+}
+.mock-star-preview-box {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Panel 3: Quiz Mock */
+.mock-quiz-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.25rem;
+  height: 100%;
+}
+.mock-quiz-q {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.5;
+}
+.mock-quiz-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+.mock-quiz-opt {
+  background: rgba(255,255,255,0.01);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-desc);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.mock-quiz-opt:hover {
+  background: rgba(255,255,255,0.02);
+  border-color: rgba(255,255,255,0.15);
+}
+.mock-quiz-opt.clicked-wrong {
+  background: rgba(244, 63, 94, 0.08) !important;
+  border-color: rgba(244, 63, 94, 0.35) !important;
+  color: var(--danger-bright) !important;
+}
+.mock-quiz-opt.clicked-correct {
+  background: rgba(16, 185, 129, 0.08) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+  color: var(--secondary-bright) !important;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.05);
+}
+.mock-quiz-feedback {
+  background: rgba(16, 185, 129, 0.03);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  animation: feedbackSlide 0.4s var(--ease-out-expo) forwards;
+}
+@keyframes feedbackSlide {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.quiz-badge-add {
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  font-weight: 900;
+  color: #fff;
+  background-color: var(--secondary);
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  box-shadow: 0 0 10px var(--secondary-glow);
+}
+
+/* 5. FAQ Accordion Styling */
+.landing-faq {
+  width: 100%;
+}
+.faq-accordion-container {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.faq-item {
+  background: rgba(255, 255, 255, 0.008);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.faq-item:hover {
+  background: rgba(255, 255, 255, 0.015);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.faq-trigger {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  text-align: left;
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  transition: var(--transition-fast);
+}
+.faq-trigger span {
+  padding-right: 1.5rem;
+}
+.faq-trigger i {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.faq-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), padding 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0 1.5rem;
+}
+.faq-content p {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text-desc);
+  margin-bottom: 1.5rem;
+}
+.faq-item.active {
+  border-color: rgba(168, 85, 247, 0.25);
+  background: rgba(168, 85, 247, 0.02);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+.faq-item.active .faq-trigger {
+  color: var(--primary-bright);
+}
+.faq-item.active .faq-trigger i {
+  transform: rotate(180deg);
+  color: var(--primary-bright);
+}
+
+/* 6. Scroll Reveal Observer elements */
+.reveal-init {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal-init.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Showcase layout responsive overrides */
+@media (max-width: 1024px) {
+  .showcase-container {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
+  .showcase-tabs {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+  .showcase-tab {
+    flex-shrink: 0;
+    min-width: 250px;
+  }
+}
+@media (max-width: 768px) {
+  .mock-star-container {
+    grid-template-columns: 1fr;
+  }
+  .mock-star-preview-box {
+    margin-top: 0.5rem;
+    padding: 1rem;
+  }
+  .showcase-preview-frame {
+    height: 420px;
+  }
+}
+
+
+
 
 
